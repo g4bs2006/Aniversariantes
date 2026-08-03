@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getClinicaBySlug } from '@/lib/clinicas'
 import { createScheduledMessage } from '@/lib/helena'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { toE164BR, parseAniversarioMonthDay, nextOccurrence } from '@/lib/format'
+import { toE164BR, parseAniversarioMonthDay, nextOccurrence, aniversarioParaExibicao } from '@/lib/format'
 import type { Aniversariante, TemplateConfig } from '@/types/database'
 
 interface CreateBody {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         nome: paciente.nome,
         primeiro_nome: paciente.nome.split(' ')[0],
         data_nascimento: paciente.datanascimento,
-        aniversario: paciente.aniversario,
+        aniversario: aniversarioParaExibicao(paciente.aniversario),
       }
       templateParams[param] = source[field] ?? ''
     }

@@ -22,16 +22,18 @@ export interface HelenaTemplate {
   id: string
   name: string
   type: string
-  approved?: boolean
-  content?: string
+  status: string // "APPROVED" quando pronto pra uso
+  text: string | null
   params?: unknown
 }
 
-// GET /chat/v1/template — só modelos de tipo SCHEDULEDMESSAGE e aprovados
-// entram como opção pra agendamento de aniversário.
+// GET /chat/v1/template — filtra só aprovados.
+// Nota: o parâmetro de query `Type` (QUICKREPLY/CAMPAIGN/SCHEDULEDMESSAGE/...)
+// NÃO corresponde ao campo `type` do objeto retornado (que na prática vem
+// como "TEMPLATE" pra templates HSM comuns, aprovação confirmada em teste
+// direto) — por isso não filtramos por Type aqui, só por aprovação.
 export async function listTemplates(clinica: Pick<Clinica, 'helena_token'>) {
   const params = new URLSearchParams({
-    Type: 'SCHEDULEDMESSAGE',
     ApprovedOnly: 'true',
     PageSize: '100',
   })

@@ -13,6 +13,14 @@ export function parseAniversarioMonthDay(aniversario: string) {
   return { mes, dia }
 }
 
+// O campo `aniversario` é guardado internamente como "MM/DD" (mais fácil pros
+// cálculos de data acima). Pra exibir em tela ou inserir no texto da mensagem
+// pro paciente, converte pro formato brasileiro "DD/MM".
+export function aniversarioParaExibicao(aniversario: string) {
+  const [mes, dia] = aniversario.split('/')
+  return `${dia}/${mes}`
+}
+
 // A data de nascimento vem da e-Clínica como "YYYY-MM-DD", mas a API já foi
 // vista respondendo com datas sentinela ("0000-00-00", "0001-01-01") quando o
 // campo é vazio no cadastro. Retorna null se ausente/inválida.

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const items = helenaTemplates.map((t) => ({
       helena_template_id: t.id,
       nome: t.name,
-      conteudo: t.content ?? '',
+      conteudo: t.text ?? '',
       config: configPorTemplateId.get(t.id) ?? null,
     }))
 

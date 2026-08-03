@@ -5,6 +5,7 @@ import { Button } from './ui/Button'
 import { StatusBadge } from './ui/Badge'
 import { ScheduleModal } from './ScheduleModal'
 import { CLINICA_SLUG } from '@/lib/constants'
+import { aniversarioParaExibicao } from '@/lib/format'
 import type { Aniversariante, StatusEnvio } from '@/types/database'
 
 interface Item extends Aniversariante {
@@ -95,7 +96,7 @@ export function AniversariantesView() {
                 <td className="px-4 py-3 font-medium text-slate-800">{item.nome}</td>
                 <td className="px-4 py-3 text-slate-500">{item.celular || item.telefone}</td>
                 <td className="px-4 py-3 text-slate-500">{item.datanascimento}</td>
-                <td className="px-4 py-3 text-slate-500">{item.aniversario}</td>
+                <td className="px-4 py-3 text-slate-500">{aniversarioParaExibicao(item.aniversario)}</td>
                 <td className="px-4 py-3">
                   <StatusBadge status={item.envio?.status ?? 'none'} />
                 </td>

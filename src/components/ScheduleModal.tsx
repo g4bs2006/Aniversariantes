@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Modal } from './ui/Modal'
 import { Button } from './ui/Button'
+import { aniversarioParaExibicao } from '@/lib/format'
 import type { Aniversariante } from '@/types/database'
 
 interface TemplateOption {
@@ -65,7 +66,7 @@ export function ScheduleModal({ open, onClose, clinicaSlug, paciente, onSchedule
         nome: paciente.nome,
         primeiro_nome: paciente.nome.split(' ')[0],
         data_nascimento: paciente.datanascimento,
-        aniversario: paciente.aniversario,
+        aniversario: aniversarioParaExibicao(paciente.aniversario),
       }
       out = out.replaceAll(`{{${param}}}`, source[field] ?? `{{${param}}}`)
     }
