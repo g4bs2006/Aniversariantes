@@ -1,10 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Button } from './ui/Button'
 import { StatusBadge } from './ui/Badge'
 import { ScheduleModal } from './ScheduleModal'
+import { CLINICA_SLUG } from '@/lib/constants'
 import type { Aniversariante, StatusEnvio } from '@/types/database'
 
 interface Item extends Aniversariante {
@@ -17,8 +17,7 @@ const MESES = [
 ]
 
 export function AniversariantesView() {
-  const searchParams = useSearchParams()
-  const clinica = searchParams.get('clinica')
+  const clinica = CLINICA_SLUG
 
   const [mes, setMes] = useState(String(new Date().getMonth() + 1).padStart(2, '0'))
   const [items, setItems] = useState<Item[]>([])
@@ -47,10 +46,6 @@ export function AniversariantesView() {
 
   const filtrados = items.filter((i) => i.nome.toLowerCase().includes(busca.toLowerCase()))
   const agendados = items.filter((i) => i.envio && i.envio.status !== 'canceled').length
-
-  if (!clinica) {
-    return <p className="text-sm text-slate-500">Selecione uma clínica no topo da página.</p>
-  }
 
   return (
     <div className="flex flex-col gap-5">

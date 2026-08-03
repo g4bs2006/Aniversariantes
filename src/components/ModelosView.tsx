@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Button } from './ui/Button'
+import { CLINICA_SLUG } from '@/lib/constants'
 
 interface TemplateItem {
   helena_template_id: string
@@ -147,8 +147,7 @@ function TemplateCard({
 }
 
 export function ModelosView() {
-  const searchParams = useSearchParams()
-  const clinica = searchParams.get('clinica')
+  const clinica = CLINICA_SLUG
   const [items, setItems] = useState<TemplateItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -169,8 +168,6 @@ export function ModelosView() {
   useEffect(() => {
     load()
   }, [load])
-
-  if (!clinica) return <p className="text-sm text-slate-500">Selecione uma clínica no topo da página.</p>
 
   return (
     <div className="flex flex-col gap-5">

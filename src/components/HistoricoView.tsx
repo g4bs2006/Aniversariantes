@@ -1,14 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Button } from './ui/Button'
 import { StatusBadge } from './ui/Badge'
+import { CLINICA_SLUG } from '@/lib/constants'
 import type { Envio } from '@/types/database'
 
 export function HistoricoView() {
-  const searchParams = useSearchParams()
-  const clinica = searchParams.get('clinica')
+  const clinica = CLINICA_SLUG
   const [items, setItems] = useState<Envio[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +45,6 @@ export function HistoricoView() {
     }
   }
 
-  if (!clinica) return <p className="text-sm text-slate-500">Selecione uma clínica no topo da página.</p>
 
   return (
     <div className="flex flex-col gap-5">

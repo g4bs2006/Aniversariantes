@@ -1,9 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
-import { ClinicaSwitcher } from './ClinicaSwitcher'
+import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 
 const NAV = [
@@ -14,8 +12,6 @@ const NAV = [
 
 function NavLinks() {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const qs = searchParams.toString()
 
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -24,7 +20,7 @@ function NavLinks() {
         return (
           <Link
             key={item.href}
-            href={qs ? `${item.href}?${qs}` : item.href}
+            href={item.href}
             className={clsx(
               'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
               active ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -47,20 +43,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="text-2xl">🎉</span>
           <div>
             <p className="text-sm font-bold text-slate-900 leading-tight">Aniversariantes</p>
-            <p className="text-xs text-slate-400 leading-tight">Mensagens automáticas</p>
+            <p className="text-xs text-slate-400 leading-tight">Oral Foz</p>
           </div>
         </div>
-        <Suspense fallback={<div className="px-3 text-sm text-slate-400">Carregando...</div>}>
-          <NavLinks />
-        </Suspense>
+        <NavLinks />
       </aside>
 
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
           <p className="text-sm text-slate-500">Painel de aniversariantes</p>
-          <Suspense fallback={<div className="h-9 w-40 animate-pulse rounded-lg bg-slate-100" />}>
-            <ClinicaSwitcher />
-          </Suspense>
+          <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700">
+            Oral Foz
+          </span>
         </header>
         <main className="flex-1 overflow-y-auto app-scroll bg-slate-50 p-6">{children}</main>
       </div>
