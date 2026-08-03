@@ -13,16 +13,28 @@ export function parseAniversarioMonthDay(aniversario: string) {
   return { mes, dia }
 }
 
-// `nascimento` vem da e-Clínica como "YYYY-MM-DD". Retorna null se ausente/inválido.
-export function parseNascimento(nascimento: string | null) {
-  if (!nascimento) return null
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(nascimento)
+// A data de nascimento vem da e-Clínica como "YYYY-MM-DD", mas a API já foi
+// vista respondendo com datas sentinela ("0000-00-00", "0001-01-01") quando o
+// campo é vazio no cadastro. Retorna null se ausente/inválida.
+export function parseDataYMD(raw: string | null | undefined) {
+  if (!raw) return null
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw)
   if (!match) return null
   const [, ano, mes, dia] = match
+  if (ano === '0000' || ano === '0001' || mes === '00' || dia === '00') return null
   return {
     aniversario: `${mes}/${dia}`,
     datanascimento: `${dia}/${mes}/${ano}`,
   }
+}
+
+// Alguns registros já vêm com `aniversario` pronto ("MM/DD"), sem a data
+// completa — mesma lógica de sentinela: "00/00" = vazio.
+export function parseAniversarioPronto(raw: string | null | undefined) {
+  if (!raw || raw === '00/00') return null
+  const [mes, dia] = raw.split('/')
+  if (!mes || !dia || mes === '00' || dia === '00') return null
+  return { aniversario: `${mes}/${dia}`, datanascimento: null as string | null }
 }
 
 // Brasil não tem mais horário de verão desde 2019 — offset fixo por timezone.

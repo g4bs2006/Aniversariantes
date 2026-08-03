@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getClinicaBySlug } from '@/lib/clinicas'
 import { listAllClientes } from '@/lib/eclinica'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { parseNascimento } from '@/lib/format'
+import { parseDataYMD, parseAniversarioPronto } from '@/lib/format'
 import type { Aniversariante } from '@/types/database'
+
+// `situacao`/`clientesituacao_id` é uma etiqueta livre do CRM da clínica, não
+// um enum — mas esses dois valores claramente indicam paciente que não deve
+// mais receber mensagem (cadastro morto/inativo).
+const SITUACOES_EXCLUIDAS = new Set(['INATIVO', 'ARQUIVO MORTO'])
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -33,20 +38,28 @@ export async function GET(request: NextRequest) {
 
     const items: (Aniversariante & { envio: unknown })[] = []
     for (const cliente of clientes) {
-      const nascimento = parseNascimento(cliente.nascimento)
-      if (!nascimento) continue // sem data de nascimento não dá pra saber o mês
+      // Shape instável: tenta data completa (datanascimento ou nascimento),
+      // cai pro aniversario "MM/DD" pronto se for tudo que tiver.
+      const data =
+        parseDataYMD(cliente.datanascimento) ??
+        parseDataYMD(cliente.nascimento) ??
+        parseAniversarioPronto(cliente.aniversario)
+      if (!data) continue // sem data válida não dá pra saber o mês
 
-      if (mes && nascimento.aniversario.split('/')[0] !== mes.padStart(2, '0')) continue
+      if (mes && data.aniversario.split('/')[0] !== mes.padStart(2, '0')) continue
+
+      const situacao = cliente.situacao ?? cliente.clientesituacao_id ?? ''
+      if (SITUACOES_EXCLUIDAS.has(situacao.toUpperCase())) continue
 
       const id = String(cliente.id)
       items.push({
         id,
-        nome: cliente.name,
+        nome: cliente.nome ?? cliente.name ?? '(sem nome)',
         telefone: cliente.telefone,
         celular: cliente.celular,
-        aniversario: nascimento.aniversario,
-        datanascimento: nascimento.datanascimento,
-        situacao: cliente.clientesituacao_id ?? '',
+        aniversario: data.aniversario,
+        datanascimento: data.datanascimento ?? '',
+        situacao,
         envio: envioPorPaciente.get(id) ?? null,
       })
     }

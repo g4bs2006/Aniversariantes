@@ -57,16 +57,24 @@ export interface Envio {
   created_at: string
 }
 
-// Shape real do endpoint `GET /aniversariantes` da e-Clínica (confirmado por
-// teste direto em 2026-08-03 — diverge bastante da doc pública em
-// efficient.app.br/apidoc, que descreve campos que a API não retorna).
+// O endpoint `GET /aniversariantes` da e-Clínica é instável: em testes diretos
+// (2026-08-03) o mesmo endpoint, sem nenhum parâmetro diferente, respondeu
+// ora com um shape ("nome"/"aniversario"/"datanascimento"/"situacao" — igual
+// à doc pública), ora com outro completamente diferente ("name"/"nascimento"/
+// "clientesituacao_id"). Datas também vêm com sentinelas de "vazio"
+// ("0000-00-00", "00/00"). Por isso os campos abaixo são todos opcionais e a
+// normalização em src/lib/format.ts aceita qualquer um dos dois shapes.
 export interface EClinicaCliente {
   id: number
-  name: string
-  nascimento: string | null // YYYY-MM-DD
+  nome?: string
+  name?: string
+  aniversario?: string | null // "MM/DD" (pode vir "00/00" = vazio)
+  datanascimento?: string | null // "YYYY-MM-DD" (pode vir "0000-00-00" = vazio)
+  nascimento?: string | null // "YYYY-MM-DD" (shape alternativo)
   telefone: string | null
   celular: string | null
-  clientesituacao_id: string | null
+  situacao?: string | null
+  clientesituacao_id?: string | null
 }
 
 // Shape normalizado que o resto do app consome (frontend + agendamento).
