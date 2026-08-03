@@ -7,10 +7,22 @@ export function toE164BR(raw: string): string | null {
   return null
 }
 
-// aniversario vem como "MM/DD" na API e-Clínica
+// aniversario vem como "MM/DD" (já normalizado por nós a partir de `nascimento`)
 export function parseAniversarioMonthDay(aniversario: string) {
   const [mes, dia] = aniversario.split('/').map((v) => parseInt(v, 10))
   return { mes, dia }
+}
+
+// `nascimento` vem da e-Clínica como "YYYY-MM-DD". Retorna null se ausente/inválido.
+export function parseNascimento(nascimento: string | null) {
+  if (!nascimento) return null
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(nascimento)
+  if (!match) return null
+  const [, ano, mes, dia] = match
+  return {
+    aniversario: `${mes}/${dia}`,
+    datanascimento: `${dia}/${mes}/${ano}`,
+  }
 }
 
 // Brasil não tem mais horário de verão desde 2019 — offset fixo por timezone.

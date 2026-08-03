@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       .single<TemplateConfig>()
     if (templateErr || !template) throw new Error('Modelo de mensagem não encontrado')
 
-    const telefone = toE164BR(paciente.celular || paciente.telefone)
+    const telefone = toE164BR(paciente.celular || paciente.telefone || '')
     if (!telefone) throw new Error(`Telefone inválido para ${paciente.nome}`)
 
     const anoAtual = new Date().getFullYear()

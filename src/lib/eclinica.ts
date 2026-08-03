@@ -1,18 +1,18 @@
-import type { Aniversariante, Clinica } from '@/types/database'
+import type { Clinica, EClinicaCliente } from '@/types/database'
 
-// Base URL confirmada na doc pública: https://efficient.app.br/apidoc
 const DEFAULT_BASE_URL = 'https://eclinica.app/api/v2'
 
-export async function listAniversariantes(
-  clinica: Pick<Clinica, 'eclinica_token' | 'eclinica_base_url'>,
-  opts: { mes?: string; mesdia?: string } = {}
-): Promise<Aniversariante[]> {
+// A API real ignora/quebra com os parâmetros de query documentados
+// (`mes`/`mesdia` fazem o backend deles responder 500 — confirmado em
+// 2026-08 testando direto). O único jeito que funciona hoje é buscar a
+// lista completa de clientes (sem filtro) e filtrar por mês no nosso lado.
+// Atenção: essa lista é o cadastro inteiro da clínica (pode ser grande).
+export async function listAllClientes(
+  clinica: Pick<Clinica, 'eclinica_token' | 'eclinica_base_url'>
+): Promise<EClinicaCliente[]> {
   const baseUrl = clinica.eclinica_base_url || DEFAULT_BASE_URL
-  const params = new URLSearchParams()
-  if (opts.mes) params.set('mes', opts.mes)
-  if (opts.mesdia) params.set('mesdia', opts.mesdia)
 
-  const res = await fetch(`${baseUrl}/aniversariantes?${params.toString()}`, {
+  const res = await fetch(`${baseUrl}/aniversariantes`, {
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
