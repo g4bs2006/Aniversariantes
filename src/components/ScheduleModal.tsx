@@ -202,7 +202,7 @@ export function ScheduleModal({ open, onClose, clinicaSlug, pacientes, onSchedul
             <select
               value={selectedId}
               onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-mid)]"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             >
               {templates.map((t) => (
                 <option key={t.config!.id} value={t.config!.id}>
@@ -230,7 +230,7 @@ export function ScheduleModal({ open, onClose, clinicaSlug, pacientes, onSchedul
                 type="datetime-local"
                 value={datetime}
                 onChange={(e) => setDatetime(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-mid)]"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               />
             </div>
           )}

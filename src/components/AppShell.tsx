@@ -14,7 +14,7 @@ function NavLinks() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex flex-1 flex-col gap-1 px-3">
+    <nav className="flex items-center gap-1">
       {NAV.map((item) => {
         const active = pathname === item.href
         return (
@@ -22,11 +22,11 @@ function NavLinks() {
             key={item.href}
             href={item.href}
             className={clsx(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              active ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              active ? 'text-[var(--primary)]' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
             )}
           >
-            <span>{item.icon}</span>
+            <span className="text-base leading-none">{item.icon}</span>
             {item.label}
           </Link>
         )
@@ -37,27 +37,24 @@ function NavLinks() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen">
-      <aside className="flex w-64 flex-col border-r border-slate-200 bg-white py-6">
-        <div className="mb-8 flex items-center gap-2 px-4">
-          <span className="text-2xl">🎉</span>
-          <div>
-            <p className="text-sm font-bold text-slate-900 leading-tight">Aniversariantes</p>
-            <p className="text-xs text-slate-400 leading-tight">Oral Foz</p>
-          </div>
-        </div>
-        <NavLinks />
-      </aside>
-
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
-          <p className="text-sm text-slate-500">Painel de aniversariantes</p>
-          <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700">
-            Oral Foz
-          </span>
-        </header>
-        <main className="flex-1 overflow-y-auto app-scroll bg-slate-50 p-6">{children}</main>
+    <div className="flex min-h-screen flex-col">
+      {/* Faixa fina de identidade da conta — mesmo padrão da barra superior da Helena */}
+      <div
+        className="flex h-9 items-center justify-between px-6 text-xs font-medium text-white"
+        style={{ background: 'var(--topbar)' }}
+      >
+        <span className="tracking-wide uppercase">Oral Foz · Aniversariantes</span>
       </div>
+
+      {/* Nav horizontal branca, igual ao padrão Atendimentos/CRM/Apps da Helena */}
+      <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
+        <div className="flex items-center gap-3">
+          <span className="text-xl leading-none">🎉</span>
+          <NavLinks />
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto app-scroll bg-[var(--background)] p-6">{children}</main>
     </div>
   )
 }

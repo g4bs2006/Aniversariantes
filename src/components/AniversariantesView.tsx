@@ -95,12 +95,12 @@ export function AniversariantesView() {
             placeholder="Buscar por nome..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-mid)]"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
           />
           <select
             value={mes}
             onChange={(e) => setMes(e.target.value)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-mid)]"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
           >
             {MESES.map((m, idx) => (
               <option key={m} value={String(idx + 1).padStart(2, '0')}>{m}</option>
@@ -112,8 +112,8 @@ export function AniversariantesView() {
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
       {selecionados.size > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-purple-200 bg-purple-50 px-4 py-2.5">
-          <p className="text-sm font-medium text-purple-800">{selecionados.size} selecionado(s)</p>
+        <div className="flex items-center justify-between rounded-lg border border-indigo-200 bg-[var(--primary-soft)] px-4 py-2.5">
+          <p className="text-sm font-medium text-indigo-800">{selecionados.size} selecionado(s)</p>
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={() => setSelecionados(new Set())}>Limpar seleção</Button>
             <Button size="sm" onClick={abrirAgendamentoEmLote}>Agendar selecionados</Button>

@@ -2,16 +2,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Paleta extraída da plataforma Helena/wts.chat — o app precisa se
+     confundir com ela, não ter identidade própria. */
+  --background: #f4f5f8;
+  --foreground: #1f2937;
 
-  --primary-from: #7c3aed;
-  --primary-to: #dc2626;
-  --primary-mid: #9f1f6a;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-soft: #eef0ff;
   --primary-foreground: #ffffff;
+  --topbar: #3730a5;
 
-  --status-scheduled: #dbeafe;
-  --status-scheduled-fg: #1d4ed8;
+  --status-scheduled: #eef0ff;
+  --status-scheduled-fg: #4338ca;
   --status-sent: #dcfce7;
   --status-sent-fg: #15803d;
   --status-canceled: #fee2e2;

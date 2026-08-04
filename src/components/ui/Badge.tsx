@@ -14,8 +14,8 @@ const STATUS_LABEL: Record<StatusEnvio | 'none', string> = {
 
 const STATUS_STYLE: Record<StatusEnvio | 'none', string> = {
   none: 'bg-slate-100 text-slate-600',
-  scheduled: 'bg-blue-100 text-blue-700',
-  processed: 'bg-blue-100 text-blue-700',
+  scheduled: 'bg-[var(--status-scheduled)] text-[var(--status-scheduled-fg)]',
+  processed: 'bg-[var(--status-scheduled)] text-[var(--status-scheduled-fg)]',
   sent: 'bg-green-100 text-green-700',
   delivered: 'bg-green-100 text-green-700',
   read: 'bg-green-100 text-green-700',
