@@ -13,6 +13,10 @@
   --primary-foreground: #ffffff;
   --topbar: #3730a5;
 
+  /* Degradê roxo→vermelho pedido de volta pros botões primários */
+  --primary-from: #7c3aed;
+  --primary-to: #dc2626;
+
   --status-scheduled: #eef0ff;
   --status-scheduled-fg: #4338ca;
   --status-sent: #dcfce7;

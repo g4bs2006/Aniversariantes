@@ -28,7 +28,17 @@ export async function POST(
     if (envioErr || !envio) throw new Error('Envio não encontrado')
     if (!envio.scheduled_message_id) throw new Error('Envio sem mensagem agendada na Helena')
 
-    await cancelScheduledMessage(clinica, envio.scheduled_message_id)
+    try {
+      await cancelScheduledMessage(clinica, envio.scheduled_message_id)
+    } catch (err) {
+      // A Helena rejeita o cancelamento se a mensagem já não está mais
+      // "agendada" lá (foi cancelada, enviada etc diretamente na plataforma
+      // dela). Nesse caso o que o usuário queria — ela não ser mais enviada —
+      // já é verdade, então só sincronizamos nosso status em vez de travar.
+      const msg = (err as Error).message.toLowerCase()
+      const jaNaoEstaAgendada = msg.includes('entity_error_save') || msg.includes('só é possível cancelar mensagens que estão agendadas')
+      if (!jaNaoEstaAgendada) throw err
+    }
 
     const { data, error } = await supabase
       .from('aniversariantes_envios')
