@@ -86,8 +86,18 @@ export function AniversariantesView() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Aniversariantes</h1>
-          <p className="text-sm text-slate-500">
-            {loading ? 'Carregando...' : `${filtrados.length} aniversariantes em ${MESES[parseInt(mes, 10) - 1]} · ${agendados} agendados`}
+          <p className="flex items-center gap-2 text-sm text-slate-500">
+            {loading ? (
+              <>
+                <span
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--primary-to)]"
+                  aria-hidden="true"
+                />
+                Buscando aniversariantes na e-Clínica...
+              </>
+            ) : (
+              `${filtrados.length} aniversariantes em ${MESES[parseInt(mes, 10) - 1]} · ${agendados} agendados`
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -143,7 +153,19 @@ export function AniversariantesView() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filtrados.map((item) => (
+            {loading &&
+              Array.from({ length: 8 }).map((_, idx) => (
+                <tr key={`skeleton-${idx}`}>
+                  <td className="px-4 py-3"><div className="h-4 w-4 animate-pulse rounded bg-slate-100" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-40 animate-pulse rounded bg-slate-100" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-28 animate-pulse rounded bg-slate-100" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-20 animate-pulse rounded bg-slate-100" /></td>
+                  <td className="px-4 py-3"><div className="h-4 w-14 animate-pulse rounded bg-slate-100" /></td>
+                  <td className="px-4 py-3"><div className="h-6 w-24 animate-pulse rounded-full bg-slate-100" /></td>
+                  <td className="px-4 py-3 text-right"><div className="ml-auto h-8 w-32 animate-pulse rounded-full bg-slate-100" /></td>
+                </tr>
+              ))}
+            {!loading && filtrados.map((item) => (
               <tr key={item.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
                   <input
