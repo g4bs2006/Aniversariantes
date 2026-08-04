@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from './ui/Button'
 import { StatusBadge } from './ui/Badge'
 import { ScheduleModal } from './ScheduleModal'
 import { CLINICA_SLUG } from '@/lib/constants'
-import { aniversarioParaExibicao } from '@/lib/format'
+import { aniversarioParaExibicao, toE164BR } from '@/lib/format'
 import type { Aniversariante, StatusEnvio } from '@/types/database'
 
 interface Item extends Aniversariante {
@@ -25,7 +25,8 @@ export function AniversariantesView() {
   const [busca, setBusca] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [modalPaciente, setModalPaciente] = useState<Aniversariante | null>(null)
+  const [modalPacientes, setModalPacientes] = useState<Aniversariante[] | null>(null)
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
 
   const load = useCallback(() => {
     if (!clinica) return
@@ -45,8 +46,40 @@ export function AniversariantesView() {
     load()
   }, [load])
 
-  const filtrados = items.filter((i) => i.nome.toLowerCase().includes(busca.toLowerCase()))
+  // Some contatos vem sem telefone utilizável (vazio, "000000", texto colado
+  // junto etc) — calculamos isso uma vez pra desabilitar seleção/agendamento.
+  const filtrados = useMemo(() => {
+    return items
+      .filter((i) => i.nome.toLowerCase().includes(busca.toLowerCase()))
+      .map((i) => ({ ...i, telefoneValido: !!toE164BR(i.celular || i.telefone || '') }))
+  }, [items, busca])
+
   const agendados = items.filter((i) => i.envio && i.envio.status !== 'canceled').length
+  const selecionaveis = filtrados.filter((i) => i.telefoneValido)
+  const todosSelecionados = selecionaveis.length > 0 && selecionaveis.every((i) => selecionados.has(i.id))
+
+  useEffect(() => {
+    // Limpa seleção ao trocar de mês/busca pra não carregar seleção de outra lista.
+    setSelecionados(new Set())
+  }, [mes, busca])
+
+  function toggleSelecionado(id: string) {
+    setSelecionados((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleTodos() {
+    setSelecionados(todosSelecionados ? new Set() : new Set(selecionaveis.map((i) => i.id)))
+  }
+
+  function abrirAgendamentoEmLote() {
+    const pacientes = filtrados.filter((i) => selecionados.has(i.id))
+    if (pacientes.length > 0) setModalPacientes(pacientes)
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -78,10 +111,29 @@ export function AniversariantesView() {
 
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
+      {selecionados.size > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-purple-200 bg-purple-50 px-4 py-2.5">
+          <p className="text-sm font-medium text-purple-800">{selecionados.size} selecionado(s)</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setSelecionados(new Set())}>Limpar seleção</Button>
+            <Button size="sm" onClick={abrirAgendamentoEmLote}>Agendar selecionados</Button>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>
+              <th className="w-10 px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={todosSelecionados}
+                  onChange={toggleTodos}
+                  disabled={selecionaveis.length === 0}
+                  aria-label="Selecionar todos"
+                />
+              </th>
               <th className="px-4 py-3">Nome</th>
               <th className="px-4 py-3">Telefone</th>
               <th className="px-4 py-3">Nascimento</th>
@@ -93,8 +145,23 @@ export function AniversariantesView() {
           <tbody className="divide-y divide-slate-100">
             {filtrados.map((item) => (
               <tr key={item.id} className="hover:bg-slate-50">
+                <td className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={selecionados.has(item.id)}
+                    onChange={() => toggleSelecionado(item.id)}
+                    disabled={!item.telefoneValido}
+                  />
+                </td>
                 <td className="px-4 py-3 font-medium text-slate-800">{item.nome}</td>
-                <td className="px-4 py-3 text-slate-500">{item.celular || item.telefone}</td>
+                <td className="px-4 py-3 text-slate-500">
+                  {item.celular || item.telefone || '—'}
+                  {!item.telefoneValido && (
+                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                      telefone inválido
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-slate-500">{item.datanascimento}</td>
                 <td className="px-4 py-3 text-slate-500">{aniversarioParaExibicao(item.aniversario)}</td>
                 <td className="px-4 py-3">
@@ -104,7 +171,9 @@ export function AniversariantesView() {
                   <Button
                     size="sm"
                     variant={item.envio && item.envio.status !== 'canceled' ? 'secondary' : 'primary'}
-                    onClick={() => setModalPaciente(item)}
+                    onClick={() => setModalPacientes([item])}
+                    disabled={!item.telefoneValido}
+                    title={!item.telefoneValido ? 'Telefone inválido — não é possível enviar mensagem' : undefined}
                   >
                     {item.envio && item.envio.status !== 'canceled' ? 'Reagendar' : 'Agendar mensagem'}
                   </Button>
@@ -113,7 +182,7 @@ export function AniversariantesView() {
             ))}
             {!loading && filtrados.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                   Nenhum aniversariante encontrado neste mês.
                 </td>
               </tr>
@@ -123,11 +192,14 @@ export function AniversariantesView() {
       </div>
 
       <ScheduleModal
-        open={!!modalPaciente}
-        onClose={() => setModalPaciente(null)}
+        open={!!modalPacientes}
+        onClose={() => setModalPacientes(null)}
         clinicaSlug={clinica}
-        paciente={modalPaciente}
-        onScheduled={load}
+        pacientes={modalPacientes}
+        onScheduled={() => {
+          load()
+          setSelecionados(new Set())
+        }}
       />
     </div>
   )
