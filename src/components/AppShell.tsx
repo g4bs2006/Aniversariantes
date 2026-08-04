@@ -38,15 +38,9 @@ function NavLinks() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Faixa fina de identidade da conta — mesmo padrão da barra superior da Helena */}
-      <div
-        className="flex h-9 items-center justify-between px-6 text-xs font-medium text-white"
-        style={{ background: 'var(--topbar)' }}
-      >
-        <span className="tracking-wide uppercase">Oral Foz · Aniversariantes</span>
-      </div>
-
-      {/* Nav horizontal branca, igual ao padrão Atendimentos/CRM/Apps da Helena */}
+      {/* Este app roda embutido dentro da própria Helena (aba/iframe) — a
+          identidade da conta (ex: "Oral Foz - Camila") já aparece na barra
+          real deles acima, então aqui só a nav das nossas 3 telas. */}
       <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
         <div className="flex items-center gap-3">
           <span className="text-xl leading-none">🎉</span>
