@@ -11,11 +11,19 @@ function authHeaders(token: string) {
 }
 
 async function unwrap(res: Response, label: string) {
+  const body = await res.text().catch(() => '')
   if (!res.ok) {
-    const body = await res.text().catch(() => '')
     throw new Error(`Helena (${label}) respondeu ${res.status}: ${body}`)
   }
-  return res.json()
+  // Nem toda resposta de sucesso tem corpo: o /cancel responde 200 com corpo
+  // vazio, e `res.json()` direto estourava "Unexpected end of JSON input" —
+  // um cancelamento que deu certo na Helena virava 500 aqui.
+  if (!body.trim()) return null
+  try {
+    return JSON.parse(body)
+  } catch {
+    return null
+  }
 }
 
 export interface HelenaTemplate {
