@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getClinicaBySlug } from '@/lib/clinicas'
 import { listAllClientes } from '@/lib/eclinica'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { parseDataYMD, parseAniversarioPronto } from '@/lib/format'
+import { parseDataYMD, parseAniversarioPronto, parseAniversarioMonthDay, aniversarioJaPassou } from '@/lib/format'
 import type { Aniversariante } from '@/types/database'
 
 // `situacao`/`clientesituacao_id` é uma etiqueta livre do CRM da clínica, não
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       (envios ?? []).map((e) => [String(e.paciente_id_eclinica), e])
     )
 
-    const items: (Aniversariante & { envio: unknown })[] = []
+    const items: (Aniversariante & { envio: unknown; ja_passou: boolean })[] = []
     for (const cliente of clientes) {
       // Shape instável: tenta data completa (datanascimento ou nascimento),
       // cai pro aniversario "MM/DD" pronto se for tudo que tiver.
@@ -52,8 +52,12 @@ export async function GET(request: NextRequest) {
       if (SITUACOES_EXCLUIDAS.has(situacao.toUpperCase())) continue
 
       const id = String(cliente.id)
+      const { mes: mesAniv, dia: diaAniv } = parseAniversarioMonthDay(data.aniversario)
       items.push({
         id,
+        // Aniversário anterior a hoje não é agendável — o envio só faz sentido
+        // de hoje pra frente (antes ia parar no ano seguinte silenciosamente).
+        ja_passou: aniversarioJaPassou(mesAniv, diaAniv, clinica.timezone),
         nome: cliente.nome ?? cliente.name ?? '(sem nome)',
         telefone: cliente.telefone,
         celular: cliente.celular,

@@ -91,6 +91,17 @@ RLS habilitada sem policies (deny-all) em todas — acesso só via
 4. **Histórico** lista todos os envios e permite cancelar os que ainda estão
    `scheduled` (`POST /chat/v1/scheduled-message/{id}/cancel`).
 
+### Regra de data: só de hoje pra frente
+
+Aniversário que já passou neste ano **não é agendável**. `nextOccurrence`
+(em `lib/format.ts`) devolve `null` nesse caso, a rota de agendamento recusa
+com erro explícito, e a lista marca o paciente com a etiqueta "já passou"
+(campo `ja_passou` calculado no fuso da clínica, não no do servidor).
+
+Se o aniversário é **hoje** mas o horário padrão do template já passou, o
+envio vai pra alguns minutos à frente em vez de pular o dia — a Helena
+rejeita agendamento no passado.
+
 ## Limitações conhecidas da e-Clínica
 
 Descobertas testando a API direto (a doc pública em
@@ -132,6 +143,12 @@ Descobertas testando a API direto (a doc pública em
 - **"App Mensagens agendadas não está habilitado"** (`ENTITY_NOT_FOUND`) é um
   erro de conta, não do código — precisa habilitar o recurso de mensagens
   agendadas nas configurações da conta Helena da clínica.
+- **Respostas de sucesso nem sempre têm corpo.** O `POST /chat/v1/scheduled-message/{id}/cancel`
+  responde `200` com corpo vazio. `res.json()` direto estoura
+  `Unexpected end of JSON input`, e um cancelamento que deu certo na Helena
+  virava `500` no nosso lado (com o status local nunca sincronizando). O
+  `unwrap` em `lib/helena.ts` lê o corpo como texto e devolve `null` quando
+  vazio.
 - **Cancelar uma mensagem que já não está mais `scheduled` na Helena**
   (por exemplo, foi cancelada direto na plataforma deles) retorna
   `ENTITY_ERROR_SAVE`. A rota de cancelamento trata esse caso como sucesso —

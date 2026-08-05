@@ -10,6 +10,7 @@ import type { Aniversariante, StatusEnvio } from '@/types/database'
 
 interface Item extends Aniversariante {
   envio: { status: StatusEnvio; scheduled_for: string | null } | null
+  ja_passou: boolean
 }
 
 const MESES = [
@@ -48,14 +49,19 @@ export function AniversariantesView() {
 
   // Some contatos vem sem telefone utilizável (vazio, "000000", texto colado
   // junto etc) — calculamos isso uma vez pra desabilitar seleção/agendamento.
+  // `ja_passou` (vindo da API, no fuso da clínica) desabilita pelo mesmo
+  // motivo: não dá pra parabenizar um aniversário que já aconteceu.
   const filtrados = useMemo(() => {
     return items
       .filter((i) => i.nome.toLowerCase().includes(busca.toLowerCase()))
-      .map((i) => ({ ...i, telefoneValido: !!toE164BR(i.celular || i.telefone || '') }))
+      .map((i) => {
+        const telefoneValido = !!toE164BR(i.celular || i.telefone || '')
+        return { ...i, telefoneValido, agendavel: telefoneValido && !i.ja_passou }
+      })
   }, [items, busca])
 
   const agendados = items.filter((i) => i.envio && i.envio.status !== 'canceled').length
-  const selecionaveis = filtrados.filter((i) => i.telefoneValido)
+  const selecionaveis = filtrados.filter((i) => i.agendavel)
   const todosSelecionados = selecionaveis.length > 0 && selecionaveis.every((i) => selecionados.has(i.id))
 
   useEffect(() => {
@@ -172,7 +178,7 @@ export function AniversariantesView() {
                     type="checkbox"
                     checked={selecionados.has(item.id)}
                     onChange={() => toggleSelecionado(item.id)}
-                    disabled={!item.telefoneValido}
+                    disabled={!item.agendavel}
                   />
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-800">{item.nome}</td>
@@ -185,7 +191,14 @@ export function AniversariantesView() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-slate-500">{item.datanascimento}</td>
-                <td className="px-4 py-3 text-slate-500">{aniversarioParaExibicao(item.aniversario)}</td>
+                <td className="px-4 py-3 text-slate-500">
+                  {aniversarioParaExibicao(item.aniversario)}
+                  {item.ja_passou && (
+                    <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      já passou
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={item.envio?.status ?? 'none'} />
                 </td>
@@ -194,8 +207,14 @@ export function AniversariantesView() {
                     size="sm"
                     variant={item.envio && item.envio.status !== 'canceled' ? 'secondary' : 'primary'}
                     onClick={() => setModalPacientes([item])}
-                    disabled={!item.telefoneValido}
-                    title={!item.telefoneValido ? 'Telefone inválido — não é possível enviar mensagem' : undefined}
+                    disabled={!item.agendavel}
+                    title={
+                      !item.telefoneValido
+                        ? 'Telefone inválido — não é possível enviar mensagem'
+                        : item.ja_passou
+                          ? 'O aniversário já passou este ano — só dá pra agendar de hoje em diante'
+                          : undefined
+                    }
                   >
                     {item.envio && item.envio.status !== 'canceled' ? 'Reagendar' : 'Agendar mensagem'}
                   </Button>

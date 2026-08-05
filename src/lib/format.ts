@@ -53,16 +53,46 @@ const FIXED_UTC_OFFSET: Record<string, number> = {
   'America/Noronha': -2,
 }
 
-export function nextOccurrence(mes: number, dia: number, timezone: string, hora: string) {
+// Data de "hoje" no fuso da clínica (o servidor roda em UTC na Vercel, então
+// não dá pra usar getFullYear/getMonth/getDate do horário local do processo).
+export function hojeNoTimezone(timezone: string) {
   const offset = FIXED_UTC_OFFSET[timezone] ?? -3
-  const now = new Date()
+  const local = new Date(Date.now() + offset * 3_600_000)
+  return { ano: local.getUTCFullYear(), mes: local.getUTCMonth() + 1, dia: local.getUTCDate() }
+}
+
+// Um aniversário que já passou neste ano NÃO deve ser agendado. Antes o
+// cálculo empurrava pro ano seguinte, e agendar em lote no dia 5 mandava quem
+// fez aniversário no dia 3 pra 2027 — parabéns fantasma, ocupando a chave
+// única (clinica, paciente, ano) e escondendo o problema.
+export function aniversarioJaPassou(mes: number, dia: number, timezone: string) {
+  const hoje = hojeNoTimezone(timezone)
+  if (mes !== hoje.mes) return mes < hoje.mes
+  return dia < hoje.dia
+}
+
+// Margem usada quando o aniversário é hoje mas o horário padrão já passou:
+// em vez de pular o dia, envia daqui a pouco.
+const MINUTOS_DE_MARGEM = 5
+
+// Retorna o instante do envio neste ano, ou null se o aniversário já passou.
+export function nextOccurrence(
+  mes: number,
+  dia: number,
+  timezone: string,
+  hora: string
+): Date | null {
+  if (aniversarioJaPassou(mes, dia, timezone)) return null
+
+  const offset = FIXED_UTC_OFFSET[timezone] ?? -3
+  const hoje = hojeNoTimezone(timezone)
   const [hh, mm] = hora.split(':').map((v) => parseInt(v, 10))
-  let year = now.getFullYear()
-  let candidate = new Date(Date.UTC(year, mes - 1, dia, hh - offset, mm))
-  // Se a data já passou este ano, agenda pro ano seguinte.
-  if (candidate.getTime() < now.getTime()) {
-    year += 1
-    candidate = new Date(Date.UTC(year, mes - 1, dia, hh - offset, mm))
+  const candidate = new Date(Date.UTC(hoje.ano, mes - 1, dia, hh - offset, mm))
+
+  // É hoje, mas o horário padrão da clínica já passou — a Helena rejeita
+  // agendamento no passado, então joga pra alguns minutos à frente.
+  if (candidate.getTime() <= Date.now()) {
+    return new Date(Date.now() + MINUTOS_DE_MARGEM * 60_000)
   }
   return candidate
 }

@@ -37,10 +37,23 @@ export async function POST(request: NextRequest) {
 
     const anoAtual = new Date().getFullYear()
 
-    let scheduling = scheduling_override
-    if (!scheduling) {
+    let scheduling: string
+    if (scheduling_override) {
+      // Data escolhida à mão no modal — ainda assim não pode ser no passado,
+      // a Helena rejeita e o envio nunca aconteceria.
+      if (new Date(scheduling_override).getTime() <= Date.now()) {
+        throw new Error('A data e hora do envio precisam estar no futuro')
+      }
+      scheduling = scheduling_override
+    } else {
       const { mes, dia } = parseAniversarioMonthDay(paciente.aniversario)
-      scheduling = nextOccurrence(mes, dia, clinica.timezone, template.horario_envio).toISOString()
+      const ocorrencia = nextOccurrence(mes, dia, clinica.timezone, template.horario_envio)
+      if (!ocorrencia) {
+        throw new Error(
+          `O aniversário de ${paciente.nome} (${aniversarioParaExibicao(paciente.aniversario)}) já passou este ano`
+        )
+      }
+      scheduling = ocorrencia.toISOString()
     }
 
     const templateParams: Record<string, string> = {}
@@ -61,7 +74,7 @@ export async function POST(request: NextRequest) {
       templateParams,
     })
 
-    const scheduledMessageId = created.id ?? created.scheduledMessageId ?? null
+    const scheduledMessageId = created?.id ?? created?.scheduledMessageId ?? null
 
     const { data: envio, error: envioErr } = await supabase
       .from('aniversariantes_envios')
