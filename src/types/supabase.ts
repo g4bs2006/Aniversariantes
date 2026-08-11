@@ -1,4 +1,4 @@
-import type { DiaEnvio, StatusEnvio } from './database'
+import type { DiaEnvio, SistemaProntuario, StatusEnvio } from './database'
 
 export interface Database {
   public: {
@@ -8,8 +8,13 @@ export interface Database {
           id: string
           slug: string
           nome: string
-          eclinica_token: string
+          sistema_prontuario: SistemaProntuario
+          eclinica_token: string | null
           eclinica_base_url: string
+          clinicorp_usuario_api: string | null
+          clinicorp_token_api: string | null
+          clinicorp_subscriber_id: string | null
+          clinicorp_base_url: string
           helena_token: string
           helena_channel_id: string | null
           helena_from: string | null
@@ -19,10 +24,32 @@ export interface Database {
         Insert: Partial<Database['public']['Tables']['aniversariantes_clinicas']['Row']> & {
           slug: string
           nome: string
-          eclinica_token: string
           helena_token: string
         }
         Update: Partial<Database['public']['Tables']['aniversariantes_clinicas']['Row']>
+        Relationships: []
+      }
+      aniversariantes_pacientes_cache: {
+        Row: {
+          id: string
+          clinica_id: string
+          paciente_id: string
+          nome: string
+          telefone: string | null
+          datanascimento: string | null
+          mes_aniversario: number
+          dia_aniversario: number
+          situacao: string | null
+          synced_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['aniversariantes_pacientes_cache']['Row']> & {
+          clinica_id: string
+          paciente_id: string
+          nome: string
+          mes_aniversario: number
+          dia_aniversario: number
+        }
+        Update: Partial<Database['public']['Tables']['aniversariantes_pacientes_cache']['Row']>
         Relationships: []
       }
       aniversariantes_templates: {

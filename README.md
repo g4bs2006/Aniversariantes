@@ -5,8 +5,12 @@ gerenciar mensagens automáticas de aniversário de pacientes: lista quem faz
 aniversário no mês, agenda o envio de um template aprovado no WhatsApp e
 acompanha o histórico de envios/cancelamentos.
 
-Hoje roda só pra **Oral Foz**, mas o schema e o código já são multi-clínica —
-ver [Multi-clínica](#multi-clínica) e [Adicionando outros sistemas](#adicionando-outros-sistemas-ehrpms-e-mensageria).
+Multi-clínica de verdade — o frontend tem um seletor de clínica (ver
+[Multi-clínica](#multi-clínica)) e cada clínica usa o sistema de prontuário
+que tiver: hoje **e-Clínica** (Oral Foz) ou **Clinicorp** (ver
+[Clinicorp](#clinicorp-e-o-cache-de-aniversariantes) — a API dela não permite
+listar aniversariantes por mês, então essa integração depende de um cron de
+sync, diferente da e-Clínica que busca ao vivo).
 
 ## Stack
 
@@ -14,10 +18,14 @@ ver [Multi-clínica](#multi-clínica) e [Adicionando outros sistemas](#adicionan
 - Supabase (projeto **Clinic Control**, `jggfnfxdtfqeqyvxufgu`, schema `public`,
   tabelas prefixadas `aniversariantes_*` pra não colidir com o resto do projeto)
 - Integrações externas atuais:
-  - **e-Clínica** (`https://eclinica.app/api/v2`) — sistema de prontuário/CRM
-    da clínica, origem dos dados de aniversariantes
+  - **e-Clínica** (`https://eclinica.app/api/v2`) — sistema de prontuário/CRM,
+    busca ao vivo (ver [Limitações conhecidas da e-Clínica](#limitações-conhecidas-da-e-clínica))
+  - **Clinicorp** (`https://api.clinicorp.com/rest/v1`) — sistema de
+    prontuário alternativo, só via cache/cron (ver
+    [Clinicorp](#clinicorp-e-o-cache-de-aniversariantes))
   - **Helena / wts.chat** (`https://api.wts.chat`) — templates de WhatsApp
-    aprovados e agendamento de mensagens
+    aprovados e agendamento de mensagens (comum às duas)
+- Vercel Cron (`vercel.json`) — dispara a sincronização diária da Clinicorp
 
 ## Estrutura
 
@@ -26,24 +34,27 @@ src/
 ├── app/
 │   ├── api/                        # rotas server-side (únicas com acesso a tokens/service role)
 │   │   ├── clinicas/               # GET  lista clínicas cadastradas
-│   │   ├── aniversariantes/        # GET  aniversariantes do mês (cruza e-Clínica + nosso histórico)
+│   │   ├── aniversariantes/        # GET  aniversariantes do mês (e-Clínica ao vivo OU cache Clinicorp)
 │   │   ├── templates/              # GET  templates aprovados + config salva / POST salva mapeamento
 │   │   ├── scheduled-message/      # POST agenda envio
 │   │   │   └── [id]/cancel/        # POST cancela (id = linha em aniversariantes_envios)
-│   │   └── historico/              # GET  lista todos os envios da clínica
+│   │   ├── historico/              # GET  lista todos os envios da clínica
+│   │   └── cron/sync-clinicorp/    # GET  (Vercel Cron, 1x/dia) sincroniza o cache da Clinicorp
 │   ├── page.tsx                    # tela Aniversariantes
 │   ├── modelos/page.tsx             # tela Modelos de mensagem
 │   └── historico/page.tsx           # tela Histórico
 ├── components/                     # Views (client components) + AppShell + ui/ (Button, Badge, Modal)
+│   ├── ClinicaProvider.tsx         # contexto com a clínica ativa (lista via /api/clinicas, persiste em localStorage)
+│   └── ClinicaSwitcher.tsx         # seletor de clínica no header (ver Multi-clínica)
 ├── lib/
-│   ├── eclinica.ts                 # cliente do sistema de prontuário (hoje: e-Clínica)
+│   ├── eclinica.ts                 # cliente do sistema de prontuário e-Clínica (busca ao vivo)
+│   ├── clinicorp.ts                # cliente do sistema de prontuário Clinicorp (usado só pelo cron de sync)
 │   ├── helena.ts                   # cliente do sistema de mensageria (hoje: Helena)
 │   ├── clinicas.ts                 # lookup de clínica por slug (credenciais)
 │   ├── supabase.ts                 # client admin (service role)
-│   ├── constants.ts                # CLINICA_SLUG fixo = 'oral-foz' (ver Multi-clínica)
 │   └── format.ts                   # normalização de telefone/data, cálculo de próxima ocorrência
 └── types/
-    ├── database.ts                 # tipos de domínio (Clinica, Aniversariante, Envio, TemplateConfig...)
+    ├── database.ts                 # tipos de domínio (Clinica, Aniversariante, Envio, TemplateConfig, PacienteCache...)
     └── supabase.ts                 # Database (schema tipado do supabase-js)
 ```
 
@@ -54,21 +65,26 @@ src/
    - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY` (Supabase Dashboard → Clinic Control →
      Settings → API → `service_role` — **nunca** commitar esse valor)
+   - `CRON_SECRET` (qualquer valor aleatório) — só é checado pela rota de
+     cron, não afeta o `npm run dev` local
 3. Rodar as migrations em `supabase/migrations/` (criam as tabelas; a seed de
    clínica real fica de fora do arquivo versionado — ver comentário no topo
    da migration)
 4. `npm run dev`
 
-Na Vercel, as mesmas 3 variáveis precisam estar cadastradas em Project
-Settings → Environment Variables (o `.env.local` só vale local).
+Na Vercel, as mesmas 4 variáveis precisam estar cadastradas em Project
+Settings → Environment Variables (o `.env.local` só vale local). O cron em
+`vercel.json` é criado automaticamente no deploy (Hobby: só dispara 1x/dia,
+por isso o schedule é diário).
 
 ## Modelo de dados (Supabase · `public`)
 
 | Tabela | O que guarda |
 |---|---|
-| `aniversariantes_clinicas` | 1 linha por clínica: `slug`, `nome`, credenciais (`eclinica_token`, `eclinica_base_url`, `helena_token`, `helena_channel_id`, `helena_from`), `timezone` |
+| `aniversariantes_clinicas` | 1 linha por clínica: `slug`, `nome`, `sistema_prontuario` (`eclinica`/`clinicorp`), credenciais de ambos os prontuários (só as do sistema escolhido são obrigatórias — ver constraint na migration), `helena_token`, `helena_channel_id`, `helena_from`, `timezone` |
+| `aniversariantes_pacientes_cache` | cache de aniversariantes só das clínicas Clinicorp, preenchido 1x/dia pelo cron `sync-clinicorp` — mês atual + próximo. A rota `aniversariantes` lê daqui em vez de chamar a Clinicorp na hora (ver [Clinicorp](#clinicorp-e-o-cache-de-aniversariantes)) |
 | `aniversariantes_templates` | mapeamento de variáveis de um template Helena pros campos do paciente (`param_mapping`), dia/horário padrão de envio, qual é o template padrão |
-| `aniversariantes_envios` | histórico de agendamentos: paciente, template usado, `scheduled_message_id` (id na Helena), status, data agendada. Chave única `(clinica_id, paciente_id_eclinica, ano)` — evita agendar parabéns duplicado no mesmo ano |
+| `aniversariantes_envios` | histórico de agendamentos: paciente, template usado, `scheduled_message_id` (id na Helena), status, data agendada. Chave única `(clinica_id, paciente_id_eclinica, ano)` — evita agendar parabéns duplicado no mesmo ano (nome da coluna é legado da e-Clínica, mas guarda o id do paciente também pra clínicas Clinicorp) |
 
 RLS habilitada sem policies (deny-all) em todas — acesso só via
 `service_role` no backend, mesmo padrão do Contact-Calendar.
@@ -157,41 +173,80 @@ Descobertas testando a API direto (a doc pública em
 
 ## Multi-clínica
 
-O banco já suporta múltiplas clínicas (`aniversariantes_clinicas`, uma linha
-por clínica com suas próprias credenciais) e todas as rotas de API recebem
-`?clinica=<slug>`. O frontend, porém, está **travado na Oral Foz** por
-decisão de escopo — `src/lib/constants.ts` exporta `CLINICA_SLUG = 'oral-foz'`
-e os componentes usam essa constante em vez de um seletor de clínica.
+O frontend tem um seletor de clínica (`ClinicaSwitcher`, no header via
+`AppShell` → `ClinicaProvider`): busca as clínicas cadastradas em
+`/api/clinicas`, guarda a escolha em `localStorage` e todas as telas
+(`AniversariantesView`, `ModelosView`, `HistoricoView`) leem a clínica ativa
+via `useClinica()` em vez de uma constante fixa. Com só 1 clínica cadastrada,
+o switcher mostra o nome dela direto (sem dropdown).
 
-Pra reativar multi-clínica no frontend:
-1. Reverter `CLINICA_SLUG` pra vir de um seletor (existiu antes como
-   `ClinicaSwitcher` + `useClinicas`, lendo/escrevendo `?clinica=` na URL —
-   ver histórico do git se quiser recuperar o componente).
-2. Inserir uma linha por clínica nova em `aniversariantes_clinicas` com
-   `slug`, `nome`, `eclinica_token`, `helena_token` (e `eclinica_base_url`
-   se a clínica não usar a mesma instância da e-Clínica).
+Todas as rotas de API continuam aceitando `?clinica=<slug>` (ou
+`clinica_slug` no body) independente do switcher — é isso que elas usam pra
+buscar a linha certa em `aniversariantes_clinicas`.
+
+Pra dar de alta uma clínica nova:
+- **e-Clínica**: inserir linha com `slug`, `nome`, `eclinica_token` (e
+  `eclinica_base_url` se não for a instância padrão), `helena_token`.
+- **Clinicorp**: inserir linha com `sistema_prontuario = 'clinicorp'`,
+  `clinicorp_usuario_api`, `clinicorp_token_api`, `clinicorp_subscriber_id`,
+  `helena_token` — e esperar o próximo cron (`sync-clinicorp`, 1x/dia) rodar
+  antes dela aparecer com dados na tela de Aniversariantes (ver seção abaixo).
+
+## Clinicorp e o cache de aniversariantes
+
+A Clinicorp (estudo em `docs/clinicorp-api.md`) só tem
+`GET /patient/birthdays?date=YYYY-MM-DD`: aniversariantes de **um dia**, não
+de um mês, e o status do paciente (`ACTIVE`/`INACTIVE`/`DELETED`) só vem em
+`GET /patient/get` (1 chamada por paciente). Reconstruir "o mês" ao vivo a
+cada carregamento da tela custaria até ~31 requests de aniversário + 1 por
+paciente encontrado — inviável num serverless function da Vercel (plano
+Hobby: cron só dispara 1x/dia, duração de function limitada).
+
+Por isso a integração é **assíncrona**, não ao vivo como a e-Clínica:
+
+1. `GET /api/cron/sync-clinicorp` (`src/app/api/cron/sync-clinicorp/route.ts`)
+   roda 1x/dia via Vercel Cron (`vercel.json`), autenticado por `CRON_SECRET`.
+   Pra cada clínica com `sistema_prontuario = 'clinicorp'`: busca os
+   aniversariantes de cada dia do mês atual + o seguinte (concorrência
+   limitada, não sequencial), enriquece com o status via `/patient/get` só
+   dos pacientes encontrados (não da base inteira) e substitui o cache da
+   clínica em `aniversariantes_pacientes_cache`.
+2. `GET /api/aniversariantes` (branch por `clinica.sistema_prontuario`) lê
+   esse cache com 1 query em vez de chamar a Clinicorp — mesmo contrato de
+   resposta (`Aniversariante`) que a e-Clínica, a UI não sabe a diferença.
+
+**Limites conhecidos, por decisão de escopo:**
+- Cache cobre só mês atual + próximo — não dá pra navegar pra um mês
+  distante numa clínica Clinicorp (não há caso de uso real pra isso: um
+  aniversário passado não é agendável de qualquer forma).
+- Frescor de até 1x/dia — um paciente cadastrado hoje na Clinicorp só aparece
+  no painel depois do próximo cron. Não existe botão de "sincronizar agora".
+- Se o cron falhar num dia, o cache simplesmente não atualiza (fica com os
+  dados do dia anterior) — não há alerta automático hoje.
 
 ## Adicionando outros sistemas (EHR/PMS e mensageria)
 
-O projeto assume hoje **um** provedor de prontuário (e-Clínica) e **um**
-provedor de mensageria (Helena) — não existe uma interface formal de
-"provider" no código, é módulo concreto mesmo. Se/quando uma clínica usar
-outro sistema (ex: Clinicorp, usado por outras clínicas do mesmo grupo — ver
-`02_Projetos/clinicorp-api-docs/`), o caminho mais simples é:
+O projeto já suporta 2 provedores de prontuário (e-Clínica ao vivo, Clinicorp
+via cache) mas continua **um** provedor de mensageria (Helena) — não existe
+uma interface formal de "provider" no código, é módulo concreto mesmo em
+ambos os casos. Pra um terceiro provedor de prontuário:
 
-**Novo provedor de prontuário:**
 1. Criar `src/lib/<sistema>.ts` com uma função que recebe as credenciais da
    clínica e devolve os dados brutos do sistema (sem se preocupar em bater
-   exatamente com `EClinicaCliente` — cada API tem seu próprio shape).
-2. Adaptar (ou criar uma variante de) `src/app/api/aniversariantes/route.ts`
-   pra normalizar esse shape novo no formato `Aniversariante` já usado por
-   toda a UI (`id`, `nome`, `telefone`, `celular`, `aniversario` "MM/DD",
-   `datanascimento` "DD/MM/AAAA", `situacao`) — esse é o contrato que
-   `AniversariantesView`, `ScheduleModal` etc. esperam, então normalizar aqui
-   evita tocar em componente de tela.
-3. Adicionar uma coluna `sistema_prontuario` (ou similar) em
-   `aniversariantes_clinicas` pra rotear qual cliente usar por clínica, e um
-   `switch`/lookup no início da rota.
+   exatamente com `EClinicaCliente`/`ClinicorpPatientBirthday` — cada API tem
+   seu próprio shape).
+2. Se o sistema novo permitir buscar por mês/intervalo, pode ir direto (ao
+   vivo) em `src/app/api/aniversariantes/route.ts`, igual à e-Clínica. Se só
+   permitir buscar por dia (como a Clinicorp), replicar o padrão de cache:
+   um job de sync escreve em `aniversariantes_pacientes_cache` (ou uma tabela
+   nova, se o shape não couber) e a rota lê de lá.
+3. Adicionar um valor novo ao enum `sistema_prontuario` (`SistemaProntuario`
+   em `types/database.ts` + a `check` constraint na migration) e o `switch`
+   correspondente em `src/app/api/aniversariantes/route.ts`.
+4. O contrato que `AniversariantesView`, `ScheduleModal` etc. esperam
+   (`Aniversariante`: `id`, `nome`, `telefone`, `celular`, `aniversario`
+   "MM/DD", `datanascimento` "DD/MM/AAAA", `situacao`) não muda — normalizar
+   pra esse formato na rota evita tocar em componente de tela.
 
 **Novo provedor de mensageria:**
 1. Criar `src/lib/<provedor>.ts` espelhando as 3 funções de `lib/helena.ts`:
@@ -202,20 +257,25 @@ outro sistema (ex: Clinicorp, usado por outras clínicas do mesmo grupo — ver
 2. Adicionar coluna `sistema_mensageria` em `aniversariantes_clinicas`.
 
 Não vale a pena introduzir uma interface `PatientProvider`/`MessagingProvider`
-genérica *antes* de existir um segundo caso real de cada — só formalize a
-abstração quando o segundo sistema aparecer, copiando o padrão do primeiro.
+genérica *antes* de existir um terceiro caso real de cada — só formalize a
+abstração quando o próximo sistema aparecer, copiando o padrão dos anteriores.
 
 ## Deploy
 
 Vercel (`aniversariantes-murex`), branch `main` — push já dispara deploy.
 Rotas de API são serverless functions (`ƒ` no output do `next build`); as
-páginas sem dependência de dados dinâmicos ficam estáticas (`○`).
+páginas sem dependência de dados dinâmicos ficam estáticas (`○`). O cron
+declarado em `vercel.json` é criado/atualizado automaticamente a cada deploy.
 
 ## Segurança
 
-- Tokens de clínica (e-Clínica, Helena) ficam só na tabela
+- Tokens de clínica (e-Clínica, Clinicorp, Helena) ficam só na tabela
   `aniversariantes_clinicas`, lida via `service_role` no backend — nunca
   chegam ao browser.
+- `GET /api/cron/sync-clinicorp` exige `Authorization: Bearer $CRON_SECRET`
+  (a Vercel injeta esse header automaticamente nas chamadas de cron quando a
+  env var `CRON_SECRET` está configurada no projeto) — sem isso, qualquer
+  request externo pra essa rota é rejeitado com 401.
 - `.env.local` é gitignored; `.env.example` só tem placeholders.
 - A pasta `captura/` (prints de referência de design) também é gitignored —
   pode conter dados reais de pacientes/conversas.

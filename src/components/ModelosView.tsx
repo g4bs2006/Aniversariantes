@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from './ui/Button'
-import { CLINICA_SLUG } from '@/lib/constants'
+import { useClinica } from './ClinicaProvider'
 
 interface TemplateItem {
   helena_template_id: string
@@ -147,7 +147,7 @@ function TemplateCard({
 }
 
 export function ModelosView() {
-  const clinica = CLINICA_SLUG
+  const { slug: clinica } = useClinica()
   const [items, setItems] = useState<TemplateItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

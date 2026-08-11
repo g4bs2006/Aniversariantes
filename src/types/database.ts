@@ -1,3 +1,5 @@
+export type SistemaProntuario = 'eclinica' | 'clinicorp'
+
 export type DiaEnvio = 'aniversario' | '1_dia_antes' | '3_dias_antes'
 
 export type StatusEnvio =
@@ -13,8 +15,13 @@ export interface Clinica {
   id: string
   slug: string
   nome: string
-  eclinica_token: string
+  sistema_prontuario: SistemaProntuario
+  eclinica_token: string | null
   eclinica_base_url: string
+  clinicorp_usuario_api: string | null
+  clinicorp_token_api: string | null
+  clinicorp_subscriber_id: string | null
+  clinicorp_base_url: string
   helena_token: string
   helena_channel_id: string | null
   helena_from: string | null
@@ -88,4 +95,41 @@ export interface Aniversariante {
   // ID de situação do cliente na e-Clínica (clientesituacao_id) — não temos o
   // mapeamento pros nomes reais, então é só informativo, não filtramos por ele.
   situacao: string
+}
+
+// GET /patient/birthdays da Clinicorp — array de aniversariantes de UM dia.
+export interface ClinicorpPatientBirthday {
+  PatientId: number
+  Name: string
+  BirthDate: string // "YYYY-MM-DD"
+  Age: number
+  Email: string | null
+  MobilePhone: string | null
+  OtherDocumentId: string | null
+}
+
+// GET /patient/get da Clinicorp — só aqui vem o status do paciente.
+export interface ClinicorpPatient {
+  PatientId: number
+  Name: string
+  Email: string | null
+  Phone: string | null
+  OtherDocumentId: string | null
+  BirthDate: string | null
+  Status: 'ACTIVE' | 'INACTIVE' | 'DELETED'
+}
+
+// Linha da aniversariantes_pacientes_cache — populada pelo cron de sync da
+// Clinicorp (src/app/api/cron/sync-clinicorp), lida ao vivo pela tela.
+export interface PacienteCache {
+  id: string
+  clinica_id: string
+  paciente_id: string
+  nome: string
+  telefone: string | null
+  datanascimento: string | null // "YYYY-MM-DD"
+  mes_aniversario: number
+  dia_aniversario: number
+  situacao: string | null
+  synced_at: string
 }

@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from './ui/Button'
 import { StatusBadge } from './ui/Badge'
-import { CLINICA_SLUG } from '@/lib/constants'
+import { useClinica } from './ClinicaProvider'
 import type { Envio } from '@/types/database'
 
 export function HistoricoView() {
-  const clinica = CLINICA_SLUG
+  const { slug: clinica } = useClinica()
   const [items, setItems] = useState<Envio[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

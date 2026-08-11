@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from './ui/Button'
 import { StatusBadge } from './ui/Badge'
 import { ScheduleModal } from './ScheduleModal'
-import { CLINICA_SLUG } from '@/lib/constants'
+import { useClinica } from './ClinicaProvider'
 import { aniversarioParaExibicao, toE164BR } from '@/lib/format'
 import type { Aniversariante, StatusEnvio } from '@/types/database'
 
@@ -19,7 +19,7 @@ const MESES = [
 ]
 
 export function AniversariantesView() {
-  const clinica = CLINICA_SLUG
+  const { slug: clinica } = useClinica()
 
   const [mes, setMes] = useState(String(new Date().getMonth() + 1).padStart(2, '0'))
   const [items, setItems] = useState<Item[]>([])

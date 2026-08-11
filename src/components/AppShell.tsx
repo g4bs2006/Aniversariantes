@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
+import { ClinicaProvider } from './ClinicaProvider'
+import { ClinicaSwitcher } from './ClinicaSwitcher'
 
 const NAV = [
   { href: '/', label: 'Aniversariantes', icon: '🎂' },
@@ -37,18 +39,23 @@ function NavLinks() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Este app roda embutido dentro da própria Helena (aba/iframe) — a
-          identidade da conta (ex: "Oral Foz - Camila") já aparece na barra
-          real deles acima, então aqui só a nav das nossas 3 telas. */}
-      <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
-        <div className="flex items-center gap-3">
-          <span className="text-xl leading-none">🎉</span>
-          <NavLinks />
-        </div>
-      </header>
+    <ClinicaProvider>
+      <div className="flex min-h-screen flex-col">
+        {/* Este app roda embutido dentro da própria Helena (aba/iframe) — a
+            identidade da conta (ex: "Oral Foz - Camila") já aparece na barra
+            real deles acima, então aqui só a nav das nossas 3 telas + a
+            clínica ativa (múltiplas clínicas podem compartilhar o mesmo
+            deploy — ver ClinicaProvider). */}
+        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
+          <div className="flex items-center gap-3">
+            <span className="text-xl leading-none">🎉</span>
+            <NavLinks />
+          </div>
+          <ClinicaSwitcher />
+        </header>
 
-      <main className="flex-1 overflow-y-auto app-scroll bg-[var(--background)] p-6">{children}</main>
-    </div>
+        <main className="flex-1 overflow-y-auto app-scroll bg-[var(--background)] p-6">{children}</main>
+      </div>
+    </ClinicaProvider>
   )
 }
