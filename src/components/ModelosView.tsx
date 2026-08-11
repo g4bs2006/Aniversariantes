@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from './ui/Button'
+import { Banner } from './ui/Banner'
 import { useClinica } from './ClinicaProvider'
 
 interface TemplateItem {
@@ -182,7 +183,11 @@ export function ModelosView() {
       </div>
 
       {loading && <p className="text-sm text-slate-400">Carregando templates aprovados...</p>}
-      {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <Banner variant="warning" action={{ label: 'Tentar de novo', onClick: load }}>
+          {error}
+        </Banner>
+      )}
       {!loading && items.length === 0 && !error && (
         <p className="text-sm text-slate-500">
           Nenhum modelo de tipo &quot;SCHEDULEDMESSAGE&quot; aprovado encontrado na Helena para esta clínica.

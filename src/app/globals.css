@@ -31,6 +31,13 @@
   --status-failed-fg: #92400e;
   --status-none: #f1f5f9;
   --status-none-fg: #475569;
+
+  /* Faixas de aviso leve/recuperável (ver Banner) — não usar pra falha
+     total de carregamento, isso é papel do EmptyState. */
+  --banner-info: #eef2ff;
+  --banner-info-fg: #3730a3;
+  --banner-warning: #fffbeb;
+  --banner-warning-fg: #78350f;
 }
 
 @theme inline {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { Button } from './ui/Button'
 import { EmptyState } from './ui/EmptyState'
+import { SearchIcon } from './ui/icons'
 import { SchedulePanel } from './SchedulePanel'
 import { useClinica } from './ClinicaProvider'
 import { aniversarioParaExibicao, idadeAtual, parseAniversarioMonthDay, rotuloDia, toE164BR } from '@/lib/format'
@@ -154,12 +155,15 @@ export function AniversariantesView() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <input
-            placeholder="Buscar nome..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="h-[38px] rounded-full border border-slate-200 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-          />
+          <div className="relative">
+            <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              placeholder="Buscar nome..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="h-[38px] rounded-full border border-slate-200 pr-4 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            />
+          </div>
           <select
             value={mes}
             onChange={(e) => setMes(e.target.value)}
@@ -184,13 +188,21 @@ export function AniversariantesView() {
               key={f.key}
               onClick={() => setFiltro(f.key)}
               className={clsx(
-                'rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
+                'flex items-center gap-1.5 rounded-full py-1.5 pr-1.5 pl-3.5 text-[13px] font-medium transition-colors',
                 ativo
                   ? 'bg-[var(--primary-from)] text-white'
                   : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
               )}
             >
-              {f.label} · {count}
+              {f.label}
+              <span
+                className={clsx(
+                  'flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold',
+                  ativo ? 'bg-white/25' : 'bg-slate-100 text-slate-500'
+                )}
+              >
+                {count}
+              </span>
             </button>
           )
         })}
@@ -256,7 +268,7 @@ export function AniversariantesView() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-slate-600">{item.celular || item.telefone || '—'}</span>
                           {!item.telefoneValido && (
-                            <span className="rounded-full bg-[var(--status-canceled)] px-2 py-0.5 text-xs font-medium text-[var(--status-canceled-fg)]">
+                            <span className="rounded bg-[var(--status-canceled)] px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-[var(--status-canceled-fg)] uppercase">
                               corrigir
                             </span>
                           )}

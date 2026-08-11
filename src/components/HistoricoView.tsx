@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from './ui/Button'
 import { StatusBadge } from './ui/Badge'
+import { Banner } from './ui/Banner'
 import { useClinica } from './ClinicaProvider'
 import type { Envio } from '@/types/database'
 
@@ -53,7 +54,11 @@ export function HistoricoView() {
         <p className="mt-1 text-sm text-slate-500">Todas as mensagens de aniversário agendadas para esta clínica.</p>
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <Banner variant="warning" action={{ label: 'Tentar de novo', onClick: load }}>
+          {error}
+        </Banner>
+      )}
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <table className="w-full text-left text-sm">

@@ -5,11 +5,12 @@ import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 import { ClinicaProvider } from './ClinicaProvider'
 import { ClinicaSwitcher } from './ClinicaSwitcher'
+import { AgendaIcon, GridIcon, ClockIcon } from './ui/icons'
 
 const NAV = [
-  { href: '/', label: 'Agenda' },
-  { href: '/modelos', label: 'Modelos' },
-  { href: '/historico', label: 'Histórico' },
+  { href: '/', label: 'Agenda', Icon: AgendaIcon },
+  { href: '/modelos', label: 'Modelos', Icon: GridIcon },
+  { href: '/historico', label: 'Histórico', Icon: ClockIcon },
 ]
 
 function NavLinks() {
@@ -17,18 +18,19 @@ function NavLinks() {
 
   return (
     <nav className="ml-2.5 flex items-center gap-5">
-      {NAV.map((item) => {
-        const active = pathname === item.href
+      {NAV.map(({ href, label, Icon }) => {
+        const active = pathname === href
         return (
           <Link
-            key={item.href}
-            href={item.href}
+            key={href}
+            href={href}
             className={clsx(
-              'text-sm font-medium transition-colors',
+              'flex items-center gap-1.5 text-sm font-medium transition-colors',
               active ? 'text-[var(--primary-from)]' : 'text-slate-500 hover:text-slate-700'
             )}
           >
-            {item.label}
+            <Icon className="h-[17px] w-[17px]" />
+            {label}
           </Link>
         )
       })}
