@@ -75,72 +75,75 @@ function TemplateCard({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-3 flex items-start justify-between">
-        <div>
-          <h3 className="font-semibold text-slate-900">{template.nome}</h3>
-          <p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-xs text-slate-500">
-            {template.conteudo || '(sem prévia de conteúdo)'}
-          </p>
-        </div>
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="flex items-center gap-2.5 border-b border-slate-100 bg-[var(--primary-soft)] px-5 py-3.5">
+        <strong className="text-sm font-semibold text-slate-900">{template.nome}</strong>
         {template.config?.is_default && (
-          <span className="rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-700">Padrão</span>
+          <span className="rounded-full bg-[var(--primary-from)] px-2 py-0.5 text-[11px] font-medium tracking-wide text-white">
+            PADRÃO
+          </span>
         )}
       </div>
 
-      {params.length === 0 ? (
-        <p className="text-sm text-slate-400">Este modelo não tem variáveis para mapear.</p>
-      ) : (
-        <div className="mb-4 grid gap-2 sm:grid-cols-2">
-          {params.map((p) => (
-            <div key={p} className="flex items-center gap-2">
-              <span className="w-16 shrink-0 text-xs font-mono text-slate-400">{`{{${p}}}`}</span>
-              <select
-                value={mapping[p] ?? 'nome'}
-                onChange={(e) => setMapping((m) => ({ ...m, [p]: e.target.value }))}
-                className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-              >
-                {FIELD_OPTIONS.map((f) => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
-            </div>
-          ))}
+      <div className="p-5">
+        <p className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+          {template.conteudo || '(sem prévia de conteúdo)'}
+        </p>
+
+        {params.length === 0 ? (
+          <p className="text-sm text-slate-400">Este modelo não tem variáveis para mapear.</p>
+        ) : (
+          <div className="mb-4 grid gap-2 sm:grid-cols-2">
+            {params.map((p) => (
+              <div key={p} className="flex items-center gap-2">
+                <span className="w-16 shrink-0 text-xs font-mono text-slate-400">{`{{${p}}}`}</span>
+                <select
+                  value={mapping[p] ?? 'nome'}
+                  onChange={(e) => setMapping((m) => ({ ...m, [p]: e.target.value }))}
+                  className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+                >
+                  {FIELD_OPTIONS.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            Enviar
+            <select
+              value={diaEnvio}
+              onChange={(e) => setDiaEnvio(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+            >
+              <option value="aniversario">No dia do aniversário</option>
+              <option value="1_dia_antes">1 dia antes</option>
+              <option value="3_dias_antes">3 dias antes</option>
+            </select>
+          </label>
+
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            Às
+            <input
+              type="time"
+              value={horario}
+              onChange={(e) => setHorario(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+            />
+          </label>
+
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
+            Modelo padrão de aniversário
+          </label>
+
+          <Button size="sm" onClick={handleSave} disabled={saving} className="ml-auto">
+            {saving ? 'Salvando...' : saved ? 'Salvo ✓' : 'Salvar configuração'}
+          </Button>
         </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-4">
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          Enviar
-          <select
-            value={diaEnvio}
-            onChange={(e) => setDiaEnvio(e.target.value)}
-            className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-          >
-            <option value="aniversario">No dia do aniversário</option>
-            <option value="1_dia_antes">1 dia antes</option>
-            <option value="3_dias_antes">3 dias antes</option>
-          </select>
-        </label>
-
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          Às
-          <input
-            type="time"
-            value={horario}
-            onChange={(e) => setHorario(e.target.value)}
-            className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-          />
-        </label>
-
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
-          Modelo padrão de aniversário
-        </label>
-
-        <Button size="sm" onClick={handleSave} disabled={saving} className="ml-auto">
-          {saving ? 'Salvando...' : saved ? 'Salvo ✓' : 'Salvar configuração'}
-        </Button>
       </div>
     </div>
   )
@@ -172,8 +175,8 @@ export function ModelosView() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Modelos de mensagem</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-lg font-semibold text-slate-900">Modelos de mensagem</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Templates aprovados na Helena para agendamento. Mapeie as variáveis com os dados do aniversariante.
         </p>
       </div>

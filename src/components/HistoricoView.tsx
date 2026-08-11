@@ -49,15 +49,15 @@ export function HistoricoView() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Histórico de envios</h1>
-        <p className="text-sm text-slate-500">Todas as mensagens de aniversário agendadas para esta clínica.</p>
+        <h1 className="text-lg font-semibold text-slate-900">Histórico de envios</h1>
+        <p className="mt-1 text-sm text-slate-500">Todas as mensagens de aniversário agendadas para esta clínica.</p>
       </div>
 
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <thead className="bg-[var(--primary-soft)] text-xs font-semibold tracking-wide text-slate-500 uppercase">
             <tr>
               <th className="px-4 py-3">Paciente</th>
               <th className="px-4 py-3">Telefone</th>

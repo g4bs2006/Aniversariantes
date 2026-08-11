@@ -3,9 +3,10 @@
 import { useClinica } from './ClinicaProvider'
 
 export function ClinicaSwitcher() {
-  const { slug, clinicas, loading, setSlug } = useClinica()
+  const { slug, clinicas, loading, erro, setSlug } = useClinica()
 
   if (loading) return <span className="text-sm text-slate-400">Carregando clínicas...</span>
+  if (erro) return <span className="text-sm text-red-500" title={erro}>Erro ao carregar clínicas</span>
   if (clinicas.length === 0) return <span className="text-sm text-red-500">Nenhuma clínica cadastrada</span>
 
   // Só 1 clínica cadastrada: mostra o nome fixo em vez de um seletor sem

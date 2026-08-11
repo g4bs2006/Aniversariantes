@@ -1,23 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* Paleta extraída da plataforma Helena/wts.chat — o app precisa se
-     confundir com ela, não ter identidade própria. */
+  /* O app roda embutido na Helena/wts.chat (ver refs/) — tipografia e
+     densidade precisam se confundir com o host, sem identidade própria.
+     A única exceção deliberada é a cor: mantemos o roxo→vermelho, mas como
+     o host faz com o logo mark dele — um acento de marca isolado (dot do
+     AppShell + botão primário), nunca como wash de fundo. Todo o resto usa
+     --primary-from sólido, igual ao indigo chapado que o host usa pra
+     estado ativo/pills. */
   --background: #f4f5f8;
   --foreground: #1f2937;
 
   --primary: #4f46e5;
   --primary-hover: #4338ca;
-  --primary-soft: #eef0ff;
+  --primary-soft: #faf5ff;
   --primary-foreground: #ffffff;
 
-  /* Degradê roxo→vermelho pedido de volta pros botões primários */
+  /* Degradê roxo→vermelho — só no dot do AppShell e no Button primário. */
   --primary-from: #7c3aed;
+  --primary-via: #c026d3;
   --primary-to: #dc2626;
 
-  --status-scheduled: #eef0ff;
-  --status-scheduled-fg: #4338ca;
+  --status-scheduled: #faf5ff;
+  --status-scheduled-fg: #7c3aed;
   --status-sent: #dcfce7;
   --status-sent-fg: #15803d;
   --status-canceled: #fee2e2;
@@ -31,14 +36,13 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', var(--font-geist-sans), -apple-system, system-ui, sans-serif;
+  font-family: var(--font-inter), -apple-system, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

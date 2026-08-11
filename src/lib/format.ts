@@ -97,6 +97,51 @@ export function nextOccurrence(
   return candidate
 }
 
+const MESES_LOWER = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+]
+
+// "DD/MM/AAAA" -> idade em anos completos, calculada no fuso da clínica.
+// Retorna null se a data vier vazia/inválida (mesmo espírito defensivo do
+// resto do arquivo — nem toda clínica/paciente tem data de nascimento boa).
+export function idadeAtual(datanascimento: string, timezone: string): number | null {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(datanascimento)
+  if (!match) return null
+  const [, diaStr, mesStr, anoStr] = match
+  const dia = parseInt(diaStr, 10)
+  const mes = parseInt(mesStr, 10)
+  const ano = parseInt(anoStr, 10)
+
+  const hoje = hojeNoTimezone(timezone)
+  let idade = hoje.ano - ano
+  if (hoje.mes < mes || (hoje.mes === mes && hoje.dia < dia)) idade--
+
+  // Cadastro com erro de digitação na e-Clínica (ex: "1694" em vez de
+  // "1964") não é sentinela de vazio, então os parsers de data não pegam —
+  // mas dá idade absurda. Melhor esconder do que mostrar "faz 332 anos".
+  if (idade < 0 || idade > 120) return null
+  return idade
+}
+
+// Rótulo do agrupamento por dia na tela de Aniversariantes: "Hoje", "Amanhã"
+// ou o dia da semana, sempre com "· D de mês". Assume o ano corrente pro
+// cálculo do dia da semana — mesma simplificação de `aniversarioJaPassou`
+// (a tela sempre trata aniversários como ocorrência do ano atual).
+export function rotuloDia(mes: number, dia: number, timezone: string): string {
+  const hoje = hojeNoTimezone(timezone)
+  const dataMes = `${dia} de ${MESES_LOWER[mes - 1]}`
+
+  if (mes === hoje.mes && dia === hoje.dia) return `Hoje · ${dataMes}`
+
+  const amanha = new Date(Date.UTC(hoje.ano, hoje.mes - 1, hoje.dia + 1))
+  if (mes === amanha.getUTCMonth() + 1 && dia === amanha.getUTCDate()) return `Amanhã · ${dataMes}`
+
+  const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+  const diaSemana = new Date(Date.UTC(hoje.ano, mes - 1, dia)).getUTCDay()
+  return `${DIAS_SEMANA[diaSemana]} · ${dataMes}`
+}
+
 export function renderTemplatePreview(content: string, mapping: Record<string, string>, data: Record<string, string>) {
   let out = content
   for (const [param, field] of Object.entries(mapping)) {

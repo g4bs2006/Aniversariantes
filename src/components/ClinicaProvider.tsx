@@ -9,6 +9,7 @@ interface ClinicaContextValue {
   slug: string
   clinicas: ClinicaPublica[]
   loading: boolean
+  erro: string | null
   setSlug: (slug: string) => void
 }
 
@@ -21,6 +22,7 @@ export function ClinicaProvider({ children }: { children: React.ReactNode }) {
   const [clinicas, setClinicas] = useState<ClinicaPublica[]>([])
   const [slug, setSlugState] = useState('')
   const [loading, setLoading] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/clinicas')
@@ -34,6 +36,7 @@ export function ClinicaProvider({ children }: { children: React.ReactNode }) {
         const inicial = lista.find((c) => c.slug === salva) ?? lista[0]
         if (inicial) setSlugState(inicial.slug)
       })
+      .catch((e) => setErro((e as Error).message))
       .finally(() => setLoading(false))
   }, [])
 
@@ -43,7 +46,7 @@ export function ClinicaProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ClinicaContext.Provider value={{ slug, clinicas, loading, setSlug }}>{children}</ClinicaContext.Provider>
+    <ClinicaContext.Provider value={{ slug, clinicas, loading, erro, setSlug }}>{children}</ClinicaContext.Provider>
   )
 }
 

@@ -7,16 +7,16 @@ import { ClinicaProvider } from './ClinicaProvider'
 import { ClinicaSwitcher } from './ClinicaSwitcher'
 
 const NAV = [
-  { href: '/', label: 'Aniversariantes', icon: '🎂' },
-  { href: '/modelos', label: 'Modelos de mensagem', icon: '💬' },
-  { href: '/historico', label: 'Histórico', icon: '🕓' },
+  { href: '/', label: 'Agenda' },
+  { href: '/modelos', label: 'Modelos' },
+  { href: '/historico', label: 'Histórico' },
 ]
 
 function NavLinks() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex items-center gap-1">
+    <nav className="ml-2.5 flex items-center gap-5">
       {NAV.map((item) => {
         const active = pathname === item.href
         return (
@@ -24,11 +24,10 @@ function NavLinks() {
             key={item.href}
             href={item.href}
             className={clsx(
-              'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              active ? 'text-[var(--primary)]' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+              'text-sm font-medium transition-colors',
+              active ? 'text-[var(--primary-from)]' : 'text-slate-500 hover:text-slate-700'
             )}
           >
-            <span className="text-base leading-none">{item.icon}</span>
             {item.label}
           </Link>
         )
@@ -46,12 +45,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             real deles acima, então aqui só a nav das nossas 3 telas + a
             clínica ativa (múltiplas clínicas podem compartilhar o mesmo
             deploy — ver ClinicaProvider). */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
-          <div className="flex items-center gap-3">
-            <span className="text-xl leading-none">🎉</span>
-            <NavLinks />
+        <header className="flex h-14 items-center gap-6 border-b border-slate-200 bg-white px-6">
+          <div className="flex items-center gap-2.5 text-[15px] font-semibold text-slate-900">
+            <span className="block h-[22px] w-[22px] rounded-full bg-gradient-to-br from-[var(--primary-from)] via-[var(--primary-via)] to-[var(--primary-to)]" />
+            Aniversariantes
           </div>
-          <ClinicaSwitcher />
+          <NavLinks />
+          <div className="ml-auto">
+            <ClinicaSwitcher />
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto app-scroll bg-[var(--background)] p-6">{children}</main>

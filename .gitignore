@@ -42,3 +42,4 @@ next-env.d.ts
 
 # capturas de tela de referencia (podem conter dados reais de pacientes/conversas)
 /captura
+/refs
