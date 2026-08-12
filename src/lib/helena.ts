@@ -35,22 +35,47 @@ export interface HelenaTemplate {
   params?: unknown
 }
 
-// GET /chat/v1/template — filtra só aprovados.
-// Nota: o parâmetro de query `Type` (QUICKREPLY/CAMPAIGN/SCHEDULEDMESSAGE/...)
-// NÃO corresponde ao campo `type` do objeto retornado (que na prática vem
-// como "TEMPLATE" pra templates HSM comuns, aprovação confirmada em teste
-// direto) — por isso não filtramos por Type aqui, só por aprovação.
-export async function listTemplates(clinica: Pick<Clinica, 'helena_token'>) {
-  const params = new URLSearchParams({
-    ApprovedOnly: 'true',
-    PageSize: '100',
-  })
+async function fetchTemplates(token: string, params: URLSearchParams): Promise<HelenaTemplate[]> {
   const res = await fetch(`${BASE_URL}/chat/v1/template?${params.toString()}`, {
-    headers: authHeaders(clinica.helena_token),
+    headers: authHeaders(token),
     cache: 'no-store',
   })
   const data = await unwrap(res, 'listar templates')
   return (data.items ?? data.results ?? data) as HelenaTemplate[]
+}
+
+export interface ListTemplatesResult {
+  templates: HelenaTemplate[]
+  // false = o filtro por Type=SCHEDULEDMESSAGE voltou vazio nessa conta e caímos
+  // de volta pra "só aprovados" (ver nota abaixo) — a tela precisa avisar que
+  // não deu pra garantir que os modelos listados são exclusivos de agendamento.
+  filtradoPorTipo: boolean
+}
+
+// GET /chat/v1/template — só aprovados E do tipo "Mensagens Agendadas".
+//
+// Nota histórica (2026-08): o campo `type` do objeto retornado às vezes vem
+// como "TEMPLATE" em vez de "SCHEDULEDMESSAGE" mesmo pra modelos aprovados e
+// usáveis em scheduled-message — isso é o CONTEÚDO do modelo (é um template
+// HSM), não a categoria de uso que o filtro `Type` da query seleciona; são
+// campos diferentes, então não dá pra usar o `type` da resposta pra validar
+// se o filtro funcionou. Por segurança (evitar quebrar clínica que já
+// funciona), se o filtro devolver vazio caímos pra "só ApprovedOnly" — mesmo
+// comportamento de antes — e sinalizamos isso pro chamador.
+export async function listTemplates(
+  clinica: Pick<Clinica, 'helena_token'>
+): Promise<ListTemplatesResult> {
+  const paramsFiltrado = new URLSearchParams({
+    ApprovedOnly: 'true',
+    Type: 'SCHEDULEDMESSAGE',
+    PageSize: '100',
+  })
+  const filtrado = await fetchTemplates(clinica.helena_token, paramsFiltrado)
+  if (filtrado.length > 0) return { templates: filtrado, filtradoPorTipo: true }
+
+  const paramsFallback = new URLSearchParams({ ApprovedOnly: 'true', PageSize: '100' })
+  const fallback = await fetchTemplates(clinica.helena_token, paramsFallback)
+  return { templates: fallback, filtradoPorTipo: false }
 }
 
 export interface CreateScheduledMessageInput {

@@ -150,11 +150,15 @@ Descobertas testando a API direto (a doc pública em
 
 ## Limitações conhecidas da Helena
 
-- **O parâmetro de query `Type` do `GET /chat/v1/template` não corresponde
-  ao campo `type` do objeto retornado.** Templates HSM comuns (inclusive
-  aprovados e usáveis em `scheduled-message`) vêm com `type: "TEMPLATE"`, não
-  `"SCHEDULEDMESSAGE"` como o enum documentado sugere. Por isso filtramos só
-  por `ApprovedOnly=true`.
+- **O campo `type` do objeto retornado por `GET /chat/v1/template` não é a
+  mesma coisa que o parâmetro de query `Type`.** `type` na resposta descreve
+  o conteúdo do modelo (templates HSM comuns vêm com `type: "TEMPLATE"`,
+  mesmo aprovados e usáveis em `scheduled-message`) — não confundir com a
+  categoria de uso que o filtro `Type=SCHEDULEDMESSAGE` da query seleciona
+  (ver enum em `Modelos_Mensagem/listar.md` na doc da Helena). `lib/helena.ts`
+  filtra por `ApprovedOnly=true&Type=SCHEDULEDMESSAGE` (2026-08-12); se numa
+  conta isso devolver vazio, cai automaticamente pra só `ApprovedOnly=true` e
+  a tela de Modelos avisa que não deu pra garantir a exclusividade.
 - **O texto do template vem no campo `text`, não `content`.**
 - **"App Mensagens agendadas não está habilitado"** (`ENTITY_NOT_FOUND`) é um
   erro de conta, não do código — precisa habilitar o recurso de mensagens

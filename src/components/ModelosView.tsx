@@ -153,6 +153,7 @@ function TemplateCard({
 export function ModelosView() {
   const { slug: clinica } = useClinica()
   const [items, setItems] = useState<TemplateItem[]>([])
+  const [filtradoPorTipo, setFiltradoPorTipo] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -164,6 +165,7 @@ export function ModelosView() {
       .then((data) => {
         if (data.error) throw new Error(data.error)
         setItems(data.items ?? [])
+        setFiltradoPorTipo(data.filtrado_por_tipo ?? true)
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
@@ -178,7 +180,8 @@ export function ModelosView() {
       <div>
         <h1 className="text-lg font-semibold text-slate-900">Modelos de mensagem</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Templates aprovados na Helena para agendamento. Mapeie as variáveis com os dados do aniversariante.
+          Templates aprovados na Helena, do tipo &quot;Mensagens Agendadas&quot;. Mapeie as variáveis com os
+          dados do aniversariante.
         </p>
       </div>
 
@@ -188,10 +191,15 @@ export function ModelosView() {
           {error}
         </Banner>
       )}
+      {!loading && !error && !filtradoPorTipo && (
+        <Banner variant="warning">
+          Não veio nenhum modelo aprovado do tipo &quot;Mensagens Agendadas&quot; nesta conta Helena — mostrando
+          todos os modelos aprovados (qualquer tipo) como alternativa. Confira no painel da Helena se o modelo
+          escolhido abaixo está de fato liberado para agendamento antes de usar.
+        </Banner>
+      )}
       {!loading && items.length === 0 && !error && (
-        <p className="text-sm text-slate-500">
-          Nenhum modelo de tipo &quot;SCHEDULEDMESSAGE&quot; aprovado encontrado na Helena para esta clínica.
-        </p>
+        <p className="text-sm text-slate-500">Nenhum modelo aprovado encontrado na Helena para esta clínica.</p>
       )}
 
       <div className="flex flex-col gap-4">

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const clinica = await getClinicaBySlug(slug)
-    const [helenaTemplates, { data: configs }] = await Promise.all([
+    const [{ templates: helenaTemplates, filtradoPorTipo }, { data: configs }] = await Promise.all([
       listTemplates(clinica),
       getSupabaseAdmin()
         .from('aniversariantes_templates')
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       config: configPorTemplateId.get(t.id) ?? null,
     }))
 
-    return NextResponse.json({ items, clinica_id: clinica.id })
+    return NextResponse.json({ items, clinica_id: clinica.id, filtrado_por_tipo: filtradoPorTipo })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
