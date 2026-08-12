@@ -32,12 +32,22 @@ export function ClinicaProvider({ children }: { children: React.ReactNode }) {
         const lista = (data.clinicas ?? []) as ClinicaPublica[]
         setClinicas(lista)
 
+        // ?clinica=<slug> tem prioridade sobre o localStorage — é o que o Clinic
+        // Control usa no botão "Abrir Aniversariantes" (aba Cadastro da clínica),
+        // pra abrir direto na clínica certa em vez de na última usada no browser.
+        // Mesmo nome de parâmetro que as rotas de API já aceitam (ver README).
+        const daUrl =
+          typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get('clinica')
+            : null
         const salva = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null
-        const inicial = lista.find((c) => c.slug === salva) ?? lista[0]
-        if (inicial) setSlugState(inicial.slug)
+        const alvo = daUrl || salva
+        const inicial = lista.find((c) => c.slug === alvo) ?? lista[0]
+        if (inicial) setSlug(inicial.slug)
       })
       .catch((e) => setErro((e as Error).message))
       .finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function setSlug(novo: string) {
