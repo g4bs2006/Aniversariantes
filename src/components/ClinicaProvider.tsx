@@ -47,7 +47,6 @@ export function ClinicaProvider({ children }: { children: React.ReactNode }) {
       })
       .catch((e) => setErro((e as Error).message))
       .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function setSlug(novo: string) {
