@@ -89,6 +89,22 @@ por isso o schedule é diário).
 RLS habilitada sem policies (deny-all) em todas — acesso só via
 `service_role` no backend, mesmo padrão do Contact-Calendar.
 
+> ### ⚠️ `aniversariantes_clinicas` tem um consumidor externo
+>
+> O **Clinic Control** (`g4bs2006/Clinic-Control`) lê **e escreve** nessa tabela:
+> a tela de clínica dele provisiona o Aniversariantes via `upsert` com
+> `onConflict: "slug"`. Ele vive no schema `clinic_control` do mesmo projeto
+> Supabase e alcança este schema por um client `service_role` dedicado.
+>
+> Consequência prática: **remover coluna, renomear ou apertar constraint aqui é
+> breaking change lá**, e nada neste repositório vai acusar. A constraint
+> `aniversariantes_clinicas_prontuario_credenciais_check`, em particular, está
+> duplicada em TypeScript no outro lado.
+>
+> Contrato coluna por coluna, com quem lê e quem escreve:
+> [`docs/reference/schema-aniversariantes.md`](https://github.com/g4bs2006/Clinic-Control/blob/main/docs/reference/schema-aniversariantes.md)
+> · decisão: [ADR 0006](https://github.com/g4bs2006/Clinic-Control/blob/main/docs/adr/0006-dono-unico-das-migrations.md)
+
 ## Fluxo de agendamento
 
 1. **Modelos de mensagem** lista os templates aprovados na Helena
@@ -275,7 +291,10 @@ declarado em `vercel.json` é criado/atualizado automaticamente a cada deploy.
 
 - Tokens de clínica (e-Clínica, Clinicorp, Helena) ficam só na tabela
   `aniversariantes_clinicas`, lida via `service_role` no backend — nunca
-  chegam ao browser.
+  chegam ao browser. Ficam em **texto plano**: o Clinic Control cifra a mesma
+  credencial Helena do lado dele (AES-256-GCM) e a grava aqui em claro. É
+  assimetria conhecida, rastreada em
+  [Clinic-Control#28](https://github.com/g4bs2006/Clinic-Control/issues/28).
 - `GET /api/cron/sync-clinicorp` exige `Authorization: Bearer $CRON_SECRET`
   (a Vercel injeta esse header automaticamente nas chamadas de cron quando a
   env var `CRON_SECRET` está configurada no projeto) — sem isso, qualquer
@@ -283,3 +302,16 @@ declarado em `vercel.json` é criado/atualizado automaticamente a cada deploy.
 - `.env.local` é gitignored; `.env.example` só tem placeholders.
 - A pasta `captura/` (prints de referência de design) também é gitignored —
   pode conter dados reais de pacientes/conversas.
+
+## Como contribuir
+
+O processo é compartilhado com o Clinic Control — Kanban contínuo por frentes,
+trunk-based, conventional commits:
+[CONTRIBUTING.md](https://github.com/g4bs2006/Clinic-Control/blob/main/CONTRIBUTING.md).
+
+Duas consequências para este repo:
+
+- **Issues nascem no Clinic-Control**, com a label `app/aniversariantes` — é o
+  repo-hub de planejamento, para a fila priorizada ficar num lugar só. O PR nasce
+  aqui e é linkado à issue de lá à mão.
+- **Fila única:** [Project #1](https://github.com/users/g4bs2006/projects/1).
