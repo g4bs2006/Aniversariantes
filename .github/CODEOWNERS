@@ -1,0 +1,9 @@
+# Ver o processo compartilhado entre os dois repos:
+# https://github.com/g4bs2006/Clinic-Control/blob/main/CONTRIBUTING.md
+*                       @g4bs2006
+
+# As tabelas `aniversariantes_*` têm um consumidor EXTERNO: o Clinic Control lê
+# e escreve nelas. Alterar coluna aqui quebra aquele app sem que nada neste repo
+# acuse. Contrato: Clinic-Control/docs/reference/schema-aniversariantes.md
+/supabase/migrations/   @g4bs2006
+/.github/workflows/     @g4bs2006
