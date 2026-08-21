@@ -12,6 +12,58 @@ que tiver: hoje **e-Clínica** (Oral Foz) ou **Clinicorp** (ver
 listar aniversariantes por mês, então essa integração depende de um cron de
 sync, diferente da e-Clínica que busca ao vivo).
 
+## Acesso
+
+O app **não tem login**. O acesso é por **link assinado**, e o token no link
+carrega o slug da clínica — é ele, e não o request, que define de qual clínica
+aquele acesso vê os dados.
+
+```
+Clinic Control  ──assina com ANIVERSARIANTES_LINK_SECRET──▶  ?t=<token>
+                                                                  │
+                                          src/proxy.ts verifica ───┤
+                                                                  ▼
+                                    header x-clinica-slug (confiável)
+                                                                  │
+                                              rotas de API ───────┘
+```
+
+- **Aba da Helena de cada clínica:** link **sem expiração**, colado uma vez na
+  configuração da aba. É a credencial de longa duração daquela clínica.
+- **Botão "Abrir Aniversariantes" no Clinic Control:** link com expiração curta,
+  para a equipe interna abrir no contexto de uma clínica.
+- `GET /api/cron/sync-clinicorp` fica fora do gate — tem o próprio `CRON_SECRET`
+  e roda para todas as clínicas, não no escopo de uma.
+
+Sem `ANIVERSARIANTES_LINK_SECRET` o app **rejeita todo acesso**, de propósito:
+sem segredo não há como distinguir token válido de forjado.
+
+### Limites, e por quanto tempo eles valem
+
+Quem tem o link tem acesso àquela clínica. O link da aba da Helena **não
+expira**, e hoje **não há como revogar o de uma clínica** sem rotacionar o
+segredo, o que derruba os de todas.
+
+Isso importa mais do que pareceria, porque **o token não é um paliativo
+esperando uma sessão chegar.** Para o acesso da equipe interna, sim: ele morre
+quando o setup virar rota do Clinic Control. Mas o operacional é usado pelo
+**pessoal da clínica**, e dar sessão do Clinic Control a eles é exatamente o que
+o [ADR 0003](https://github.com/g4bs2006/Clinic-Control/blob/main/docs/adr/0003-sem-painel-para-cliente-final.md)
+recusa — o Clinic Control assume todo usuário autenticado como staff confiável,
+sem isolamento por tenant no banco. Abrir isso exige RLS por clínica em todas as
+tabelas: um projeto, não uma tela.
+
+Ou seja: para metade do público, **este é o mecanismo de longo prazo**. As
+dívidas que sobram estão rastreadas em
+[Clinic-Control#74](https://github.com/g4bs2006/Clinic-Control/issues/74) —
+revogação por clínica (um `kid` no payload), expiração no link da aba, e
+procedimento de rotação.
+
+Antes disto o app era **inteiramente aberto** na URL pública da Vercel, e cada
+rota aceitava a clínica como parâmetro sem verificar direito de acesso. O
+"embutido na Helena via iframe" descrito acima nunca foi controle de acesso —
+um `<iframe>` não impede ninguém de abrir a URL direto.
+
 ## Stack
 
 - Next.js 16 (App Router, Turbopack) + TypeScript + Tailwind CSS 4
@@ -201,15 +253,20 @@ Descobertas testando a API direto (a doc pública em
 ## Multi-clínica
 
 O frontend tem um seletor de clínica (`ClinicaSwitcher`, no header via
-`AppShell` → `ClinicaProvider`): busca as clínicas cadastradas em
-`/api/clinicas`, guarda a escolha em `localStorage` e todas as telas
-(`AniversariantesView`, `ModelosView`, `HistoricoView`) leem a clínica ativa
-via `useClinica()` em vez de uma constante fixa. Com só 1 clínica cadastrada,
-o switcher mostra o nome dela direto (sem dropdown).
+`AppShell` → `ClinicaProvider`): busca em `/api/clinicas`, guarda a escolha em
+`localStorage` e todas as telas (`AniversariantesView`, `ModelosView`,
+`HistoricoView`) leem a clínica ativa via `useClinica()`.
 
-Todas as rotas de API continuam aceitando `?clinica=<slug>` (ou
-`clinica_slug` no body) independente do switcher — é isso que elas usam pra
-buscar a linha certa em `aniversariantes_clinicas`.
+**Desde o gate de acesso (ver [Acesso](#acesso)), `/api/clinicas` devolve só a
+clínica do escopo do token** — não a lista de todas as cadastradas. Com um único
+item, o switcher já cai sozinho no caminho de nome fixo, sem dropdown. Trocar de
+clínica é abrir o link de outra clínica, não escolher no menu.
+
+As rotas de API **ignoram** `?clinica=<slug>` e `clinica_slug` no body. Os
+parâmetros continuam sendo aceitos só para o frontend atual não quebrar; a
+clínica vem do header `x-clinica-slug` que o `proxy.ts` grava depois de verificar
+o token. Era exatamente o contrário disso — a rota confiando no slug do
+request — que deixava qualquer chamador escolher a clínica.
 
 Pra dar de alta uma clínica nova:
 - **e-Clínica**: inserir linha com `slug`, `nome`, `eclinica_token` (e

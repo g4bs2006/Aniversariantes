@@ -48,4 +48,5 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
           CRON_SECRET: ci-cron-secret
+          ANIVERSARIANTES_LINK_SECRET: ci-link-secret
         run: npm run build

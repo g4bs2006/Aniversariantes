@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClinicaBySlug } from '@/lib/clinicas'
+import { requireClinicaSlug } from '@/lib/clinica-scope'
 import { listTemplates } from '@/lib/helena'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
-// GET /api/templates?clinica=slug
-// Junta os templates aprovados na Helena com o mapeamento salvo no nosso banco.
+// GET /api/templates — junta os templates aprovados na Helena com o mapeamento
+// salvo no nosso banco, para a clínica do escopo. O `?clinica=` que o frontend
+// ainda manda é ignorado (Clinic-Control#74).
 export async function GET(request: NextRequest) {
-  const slug = request.nextUrl.searchParams.get('clinica')
-  if (!slug) {
-    return NextResponse.json({ error: 'Parâmetro "clinica" é obrigatório' }, { status: 400 })
-  }
-
   try {
-    const clinica = await getClinicaBySlug(slug)
+    const clinica = await getClinicaBySlug(requireClinicaSlug(request))
     const [{ templates: helenaTemplates, filtradoPorTipo }, { data: configs }] = await Promise.all([
       listTemplates(clinica),
       getSupabaseAdmin()
@@ -32,21 +29,24 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ items, clinica_id: clinica.id, filtrado_por_tipo: filtradoPorTipo })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    const status = (err as { status?: number }).status ?? 500
+    return NextResponse.json({ error: (err as Error).message }, { status })
   }
 }
 
-// POST /api/templates — cria ou atualiza o mapeamento de um template
+// POST /api/templates — cria ou atualiza o mapeamento de um template na clínica
+// do escopo. O `clinica_slug` do corpo é ignorado (Clinic-Control#74): era ele
+// que permitia gravar mapeamento na clínica de outro.
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { clinica_slug, helena_template_id, nome, param_mapping, dia_envio, horario_envio, is_default, ativo } = body
+  const { helena_template_id, nome, param_mapping, dia_envio, horario_envio, is_default, ativo } = body
 
-  if (!clinica_slug || !helena_template_id) {
-    return NextResponse.json({ error: 'clinica_slug e helena_template_id são obrigatórios' }, { status: 400 })
+  if (!helena_template_id) {
+    return NextResponse.json({ error: 'helena_template_id é obrigatório' }, { status: 400 })
   }
 
   try {
-    const clinica = await getClinicaBySlug(clinica_slug)
+    const clinica = await getClinicaBySlug(requireClinicaSlug(request))
     const supabase = getSupabaseAdmin()
 
     if (is_default) {
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
     if (error) throw new Error(error.message)
     return NextResponse.json({ item: data })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    const status = (err as { status?: number }).status ?? 500
+    return NextResponse.json({ error: (err as Error).message }, { status })
   }
 }

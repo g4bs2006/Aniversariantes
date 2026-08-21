@@ -1,34 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClinicaBySlug } from '@/lib/clinicas'
+import { requireClinicaSlug } from '@/lib/clinica-scope'
 import { createScheduledMessage } from '@/lib/helena'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { toE164BR, parseAniversarioMonthDay, nextOccurrence, aniversarioParaExibicao } from '@/lib/format'
 import type { Aniversariante, TemplateConfig } from '@/types/database'
 
 interface CreateBody {
-  clinica_slug: string
   template_id: string // id da linha aniversariantes_templates
   paciente: Aniversariante
   scheduling_override?: string // ISO — se o usuário editou a data/hora no modal
 }
 
-// POST /api/scheduled-message — agenda o parabéns de um aniversariante
+// POST /api/scheduled-message — agenda o parabéns de um aniversariante na
+// clínica do escopo. O `clinica_slug` do corpo é ignorado (Clinic-Control#74):
+// era ele que permitia disparar WhatsApp em nome de outra clínica, com o token
+// Helena dela.
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as CreateBody
-  const { clinica_slug, template_id, paciente, scheduling_override } = body
+  const { template_id, paciente, scheduling_override } = body
 
-  if (!clinica_slug || !template_id || !paciente) {
-    return NextResponse.json({ error: 'clinica_slug, template_id e paciente são obrigatórios' }, { status: 400 })
+  if (!template_id || !paciente) {
+    return NextResponse.json({ error: 'template_id e paciente são obrigatórios' }, { status: 400 })
   }
 
   try {
-    const clinica = await getClinicaBySlug(clinica_slug)
+    const clinica = await getClinicaBySlug(requireClinicaSlug(request))
     const supabase = getSupabaseAdmin()
 
+    // O filtro por `clinica_id` não estava aqui: bastava mandar o id de um
+    // template de outra clínica para usá-lo com as credenciais desta. Escopar
+    // a busca é o que transforma "não encontrado" na resposta certa.
     const { data: template, error: templateErr } = await supabase
       .from('aniversariantes_templates')
       .select('*')
       .eq('id', template_id)
+      .eq('clinica_id', clinica.id)
       .single<TemplateConfig>()
     if (templateErr || !template) throw new Error('Modelo de mensagem não encontrado')
 
@@ -100,6 +107,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ envio, helena_response: created })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    const status = (err as { status?: number }).status ?? 500
+    return NextResponse.json({ error: (err as Error).message }, { status })
   }
 }

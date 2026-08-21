@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClinicaBySlug } from '@/lib/clinicas'
+import { requireClinicaSlug } from '@/lib/clinica-scope'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
-// GET /api/historico?clinica=slug — lista os envios registrados (qualquer status)
+// GET /api/historico — lista os envios registrados (qualquer status) da clínica
+// do escopo. O `?clinica=` que o frontend ainda manda é ignorado: quem decide é
+// o token verificado no proxy (Clinic-Control#74).
 export async function GET(request: NextRequest) {
-  const slug = request.nextUrl.searchParams.get('clinica')
-  if (!slug) {
-    return NextResponse.json({ error: 'Parâmetro "clinica" é obrigatório' }, { status: 400 })
-  }
-
   try {
-    const clinica = await getClinicaBySlug(slug)
+    const clinica = await getClinicaBySlug(requireClinicaSlug(request))
     const { data, error } = await getSupabaseAdmin()
       .from('aniversariantes_envios')
       .select('*')
@@ -20,6 +18,7 @@ export async function GET(request: NextRequest) {
     if (error) throw new Error(error.message)
     return NextResponse.json({ items: data })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    const status = (err as { status?: number }).status ?? 500
+    return NextResponse.json({ error: (err as Error).message }, { status })
   }
 }

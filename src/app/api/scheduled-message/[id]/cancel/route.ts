@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClinicaBySlug } from '@/lib/clinicas'
+import { requireClinicaSlug } from '@/lib/clinica-scope'
 import { cancelScheduledMessage } from '@/lib/helena'
 import { getSupabaseAdmin } from '@/lib/supabase'
 
-// POST /api/scheduled-message/{envioId}/cancel?clinica=slug
+// POST /api/scheduled-message/{envioId}/cancel
 // {id} aqui é o id da nossa linha em aniversariantes_envios (não o id da Helena).
+// O `?clinica=` que o frontend ainda manda é ignorado (Clinic-Control#74) — o
+// `.eq('clinica_id')` na busca do envio já escopava, mas com o slug vindo do
+// request esse escopo era escolhido pelo chamador.
 export async function POST(
   request: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
   const { id } = await ctx.params
-  const slug = request.nextUrl.searchParams.get('clinica')
-  if (!slug) {
-    return NextResponse.json({ error: 'Parâmetro "clinica" é obrigatório' }, { status: 400 })
-  }
 
   try {
-    const clinica = await getClinicaBySlug(slug)
+    const clinica = await getClinicaBySlug(requireClinicaSlug(request))
     const supabase = getSupabaseAdmin()
 
     const { data: envio, error: envioErr } = await supabase
@@ -50,6 +50,7 @@ export async function POST(
     if (error) throw new Error(error.message)
     return NextResponse.json({ envio: data })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    const status = (err as { status?: number }).status ?? 500
+    return NextResponse.json({ error: (err as Error).message }, { status })
   }
 }
