@@ -38,12 +38,26 @@ Clinic Control  ──assina com ANIVERSARIANTES_LINK_SECRET──▶  ?t=<token
 Sem `ANIVERSARIANTES_LINK_SECRET` o app **rejeita todo acesso**, de propósito:
 sem segredo não há como distinguir token válido de forjado.
 
-> **Isto é um paliativo**, não o desenho final — ver
-> [Clinic-Control#74](https://github.com/g4bs2006/Clinic-Control/issues/74).
-> Quem tem o link tem acesso àquela clínica, e o link da aba da Helena não
-> expira: vazá-lo é permanente até o segredo ser rotacionado. O definitivo é a
-> sessão do Clinic Control com escopo por carteira, junto com o porte do setup
-> para lá.
+### Limites, e por quanto tempo eles valem
+
+Quem tem o link tem acesso àquela clínica. O link da aba da Helena **não
+expira**, e hoje **não há como revogar o de uma clínica** sem rotacionar o
+segredo, o que derruba os de todas.
+
+Isso importa mais do que pareceria, porque **o token não é um paliativo
+esperando uma sessão chegar.** Para o acesso da equipe interna, sim: ele morre
+quando o setup virar rota do Clinic Control. Mas o operacional é usado pelo
+**pessoal da clínica**, e dar sessão do Clinic Control a eles é exatamente o que
+o [ADR 0003](https://github.com/g4bs2006/Clinic-Control/blob/main/docs/adr/0003-sem-painel-para-cliente-final.md)
+recusa — o Clinic Control assume todo usuário autenticado como staff confiável,
+sem isolamento por tenant no banco. Abrir isso exige RLS por clínica em todas as
+tabelas: um projeto, não uma tela.
+
+Ou seja: para metade do público, **este é o mecanismo de longo prazo**. As
+dívidas que sobram estão rastreadas em
+[Clinic-Control#74](https://github.com/g4bs2006/Clinic-Control/issues/74) —
+revogação por clínica (um `kid` no payload), expiração no link da aba, e
+procedimento de rotação.
 
 Antes disto o app era **inteiramente aberto** na URL pública da Vercel, e cada
 rota aceitava a clínica como parâmetro sem verificar direito de acesso. O

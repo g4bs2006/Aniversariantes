@@ -24,11 +24,17 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 // versionar. Payload é `{v,slug,exp}` e nada mais — o que não existe no formato
 // não pode ser mal interpretado depois.
 //
-// Isto é o paliativo da #74, não o desenho final. O definitivo é a sessão do
-// Clinic Control com escopo por carteira (`listClinicsInScope()`), junto com o
-// porte do setup. Enquanto for token, quem tem o link tem o acesso àquela
-// clínica — e um link de aba da Helena não expira, então vazá-lo é permanente
-// até o segredo ser rotacionado.
+// QUANTO TEMPO ISTO VIVE. Para o acesso da equipe interna, é transitório: morre
+// quando o setup virar rota do Clinic Control. Para o acesso do pessoal da
+// clínica, que é quem usa o operacional, é o mecanismo de LONGO PRAZO — dar
+// sessão do Clinic Control a funcionário de clínica é o que o ADR 0003 recusa
+// (lá não há isolamento por tenant no banco; abrir isso exige RLS por clínica em
+// tudo, "um projeto, não uma tela"). Não tratar como código descartável.
+//
+// Limites conhecidos, rastreados na #74: quem tem o link tem o acesso àquela
+// clínica; o link da aba da Helena não expira; e não há revogação por clínica —
+// rotacionar o segredo derruba todas. Um `kid` por clínica no payload resolveria
+// a última, e é mais barato adicionar antes de espalhar N links do que depois.
 
 export const CLINICA_HEADER = 'x-clinica-slug'
 
