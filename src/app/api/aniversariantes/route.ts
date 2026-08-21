@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClinicaBySlug } from '@/lib/clinicas'
+import { requireClinicaSlug } from '@/lib/clinica-scope'
 import { listAllClientes } from '@/lib/eclinica'
 import { getSupabaseAdmin } from '@/lib/supabase'
 import { parseDataYMD, parseAniversarioPronto, parseAniversarioMonthDay, aniversarioJaPassou } from '@/lib/format'
@@ -118,17 +119,15 @@ async function buscarDoCacheClinicorp(clinica: Clinica, mes: string | undefined,
   return items
 }
 
+// GET /api/aniversariantes?mes=MM — aniversariantes da clínica do escopo.
+// O `?clinica=` que o frontend ainda manda é ignorado: quem decide a clínica é
+// o token verificado no proxy (Clinic-Control#74). Esta era a rota mais
+// sensível do app — devolve nome, telefone e data de nascimento de paciente.
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const slug = searchParams.get('clinica')
-  const mes = searchParams.get('mes') ?? undefined
-
-  if (!slug) {
-    return NextResponse.json({ error: 'Parâmetro "clinica" é obrigatório' }, { status: 400 })
-  }
+  const mes = request.nextUrl.searchParams.get('mes') ?? undefined
 
   try {
-    const clinica = await getClinicaBySlug(slug)
+    const clinica = await getClinicaBySlug(requireClinicaSlug(request))
 
     const anoAtual = new Date().getFullYear()
     const { data: envios } = await getSupabaseAdmin()
@@ -146,6 +145,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ items })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    const status = (err as { status?: number }).status ?? 500
+    return NextResponse.json({ error: (err as Error).message }, { status })
   }
 }
