@@ -131,8 +131,26 @@ async function sincronizarClinica(clinica: Clinica) {
 // a env var CRON_SECRET está configurada; rejeitamos qualquer outra origem.
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET
+
+  // Segredo AUSENTE e segredo ERRADO eram a mesma resposta (401), e isso custou
+  // 9 dias de sync parado sem ninguém notar: a env var nunca foi cadastrada na
+  // Vercel (só no .env.local), então a rota rejeitava a própria Vercel, e o log
+  // mostrava "Não autorizado" — indistinguível de alguém batendo na URL.
+  //
+  // 503 separa as duas coisas: é o app dizendo que ele não está configurado, não
+  // que o chamador não tem direito. Sem revelar qual variável falta, porque quem
+  // chama aqui não é autenticado.
+  if (!secret) {
+    console.error(
+      '[cron/sync-clinicorp] CRON_SECRET ausente — a rota rejeita TODA chamada, ' +
+        'inclusive a do Vercel Cron. Cadastrar em Project Settings > Environment ' +
+        'Variables (o .env.local não vale em produção).',
+    )
+    return NextResponse.json({ error: 'Cron não configurado' }, { status: 503 })
+  }
+
   const auth = request.headers.get('authorization')
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
