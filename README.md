@@ -77,6 +77,13 @@ Settings → Environment Variables (o `.env.local` só vale local). O cron em
 `vercel.json` é criado automaticamente no deploy (Hobby: só dispara 1x/dia,
 por isso o schedule é diário).
 
+> **`CRON_SECRET` faltando na Vercel já parou o sync por 9 dias** (até 21/08/2026)
+> sem ninguém perceber. A rota rejeita toda chamada quando a variável não existe
+> — inclusive a do próprio Vercel Cron. Hoje esse caso responde **503 "Cron não
+> configurado"** e escreve no log, em vez do 401 genérico que era
+> indistinguível de alguém batendo na URL. Se você vê 503 aí, é configuração,
+> não ataque.
+
 ## Modelo de dados (Supabase · `public`)
 
 | Tabela | O que guarda |
