@@ -58,7 +58,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const { naoProvisionada } = useClinica()
 
   if (naoProvisionada) {
-    return <ClinicaNaoLiberada slug={naoProvisionada.slug} />
+    return <ClinicaNaoLiberada />
   }
 
   return (
