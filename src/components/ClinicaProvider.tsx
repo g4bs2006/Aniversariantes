@@ -15,7 +15,7 @@ interface ClinicaContextValue {
    * ação é diferente: erro pede tentar de novo, isto pede falar com quem
    * administra a conta — e quem está na tela não pode se provisionar.
    */
-  naoProvisionada: { slug: string } | null
+  naoProvisionada: boolean
   setSlug: (slug: string) => void
 }
 
@@ -29,7 +29,7 @@ export function ClinicaProvider({ children }: { children: React.ReactNode }) {
   const [slug, setSlugState] = useState('')
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
-  const [naoProvisionada, setNaoProvisionada] = useState<{ slug: string } | null>(null)
+  const [naoProvisionada, setNaoProvisionada] = useState(false)
 
   useEffect(() => {
     fetch('/api/clinicas')
@@ -37,7 +37,7 @@ export function ClinicaProvider({ children }: { children: React.ReactNode }) {
       .then(({ body: data }) => {
         // 404 com código é o caminho normal de "ainda não liberado", não falha.
         if (data.code === 'CLINICA_NAO_PROVISIONADA') {
-          setNaoProvisionada({ slug: data.slug ?? '' })
+          setNaoProvisionada(true)
           return
         }
         if (data.error) throw new Error(data.error)
