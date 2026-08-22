@@ -53,8 +53,16 @@ Clinic Control  ──assina com ANIVERSARIANTES_LINK_SECRET──▶  ?t=<token
                                               rotas de API ───────┘
 ```
 
-- **Aba da Helena de cada clínica:** link **sem expiração**, colado uma vez na
-  configuração da aba. É a credencial de longa duração daquela clínica.
+- **Aba de cada clínica na plataforma:** a plataforma monta a URL por
+  espectador, passando `?clinica=<id da conta>`. É o que permite UMA
+  configuração de aba servir todas as clínicas. O id **não vem assinado**, então
+  só é aceito quando o `Referer` é de um host da lista
+  `ANIVERSARIANTES_EMBED_HOSTS`; aí o próprio app emite um token de 12h e grava
+  no cookie. **Troca aceita:** quem conhecer o id de outra clínica e apresentar
+  um Referer do host entra no lugar dela. Segura o risco o fato de os ids não
+  serem mais enumeráveis (`/api/clinicas` devolve só a clínica do escopo). O que
+  resolveria de verdade: a plataforma assinar o valor, ou permitir configuração
+  de aba por clínica.
 - **Botão "Abrir Aniversariantes" no Clinic Control:** link com expiração curta,
   para a equipe interna abrir no contexto de uma clínica.
 - `GET /api/cron/sync-clinicorp` fica fora do gate — tem o próprio `CRON_SECRET`
