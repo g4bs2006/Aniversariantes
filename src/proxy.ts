@@ -28,18 +28,22 @@ export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|api/cron).*)'],
 }
 
-function negar(request: NextRequest) {
+function negar(request: NextRequest, motivo = 'sem-token') {
   const ehApi = request.nextUrl.pathname.startsWith('/api/')
   if (ehApi) {
-    return NextResponse.json({ error: 'Acesso não autorizado' }, { status: 401 })
+    return NextResponse.json({ error: 'Acesso não autorizado', motivo }, { status: 401 })
   }
   // A UI vive dentro de um iframe na Helena. Redirecionar para uma tela de
   // login não ajuda (não há login), então responde texto curto — quem abriu
   // sem token não tem ação possível a não ser pedir o link certo.
-  return new NextResponse(
-    'Acesso não autorizado. Abra o painel pela aba da sua clínica na plataforma.',
-    { status: 401, headers: { 'content-type': 'text/plain; charset=utf-8' } },
-  )
+  const texto =
+    motivo === 'escopo-divergente'
+      ? 'Este link não corresponde à sua clínica. Peça a quem administra a conta o link correto do painel.'
+      : 'Acesso não autorizado. Abra o painel pela aba da sua clínica na plataforma.'
+  return new NextResponse(texto, {
+    status: 401,
+    headers: { 'content-type': 'text/plain; charset=utf-8' },
+  })
 }
 
 export function proxy(request: NextRequest) {
@@ -53,6 +57,25 @@ export function proxy(request: NextRequest) {
   const veioDaUrl = payload !== null
   if (!payload) payload = verifyClinicaToken(doCookie)
   if (!payload) return negar(request)
+
+  // A URL declara uma clínica e o escopo resolvido é OUTRA: recusa.
+  //
+  // Isto existe por causa de um vazamento real em 22/08. Um link específico de
+  // clínica foi colado numa configuração de aba que vale para TODAS, então toda
+  // clínica que abria recebia o cookie daquela e via os pacientes dela. E o
+  // agravante: o cookie de sessão continuava vencendo depois, mesmo quando a
+  // URL passava a declarar a clínica certa — o proxy não olhava `?clinica=`.
+  //
+  // Cobre também o caso do placeholder não substituído (`{idaccount}` literal):
+  // ele não bate com nenhum slug, então recusa em vez de servir a clínica do
+  // último cookie.
+  //
+  // Servir a clínica errada é pior que não servir nada: silencioso, e quem vê
+  // não tem como saber que está olhando dado de outra pessoa.
+  const clinicaNaUrl = request.nextUrl.searchParams.get('clinica')
+  if (clinicaNaUrl && clinicaNaUrl !== payload.slug) {
+    return negar(request, 'escopo-divergente')
+  }
 
   const headers = new Headers(request.headers)
   // `set`, não `append`: sobrescreve qualquer x-clinica-slug que o cliente
