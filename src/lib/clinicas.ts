@@ -1,6 +1,24 @@
 import { getSupabaseAdmin } from './supabase'
 import type { Clinica } from '@/types/database'
 
+/**
+ * A clínica tem token válido mas não está provisionada aqui.
+ *
+ * NÃO é erro de sistema, e por isso tem tipo próprio. Acontece no caminho
+ * normal: o link da aba da Helena pode ser configurado antes de alguém
+ * provisionar a clínica no Clinic Control. Tratar isso como 500 fazia a tela
+ * dizer "Erro ao carregar clínicas" para quem não tem nada a consertar — a
+ * pessoa da clínica não pode se provisionar.
+ */
+export class ClinicaNaoProvisionadaError extends Error {
+  readonly code = 'CLINICA_NAO_PROVISIONADA' as const
+  readonly status = 404
+  constructor(readonly slug: string) {
+    super(`Clínica "${slug}" não está provisionada no Aniversariantes`)
+    this.name = 'ClinicaNaoProvisionadaError'
+  }
+}
+
 // Dados públicos da clínica do escopo — o que o header do frontend precisa
 // mostrar, sem nenhuma credencial.
 //
@@ -16,7 +34,7 @@ export async function getClinicaPublicaBySlug(slug: string) {
     .eq('slug', slug)
     .single()
 
-  if (error || !data) throw new Error(`Clínica "${slug}" não encontrada`)
+  if (error || !data) throw new ClinicaNaoProvisionadaError(slug)
   return data
 }
 
@@ -27,6 +45,6 @@ export async function getClinicaBySlug(slug: string): Promise<Clinica> {
     .eq('slug', slug)
     .single()
 
-  if (error || !data) throw new Error(`Clínica "${slug}" não encontrada`)
+  if (error || !data) throw new ClinicaNaoProvisionadaError(slug)
   return data as Clinica
 }

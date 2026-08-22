@@ -212,7 +212,7 @@ export function AniversariantesView() {
         <EmptyState
           variant="error"
           title="Não foi possível carregar a base"
-          description="A conexão com o prontuário ou a Helena falhou. Os agendamentos já confirmados não foram afetados."
+          description="A conexão com o prontuário ou com a plataforma de mensagens falhou. Os agendamentos já confirmados não foram afetados."
           action={{ label: 'Tentar de novo', onClick: load }}
         />
       ) : (

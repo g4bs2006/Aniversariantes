@@ -10,6 +10,12 @@ interface ClinicaContextValue {
   clinicas: ClinicaPublica[]
   loading: boolean
   erro: string | null
+  /**
+   * Token válido, clínica não provisionada. Estado SEPARADO de `erro` porque a
+   * ação é diferente: erro pede tentar de novo, isto pede falar com quem
+   * administra a conta — e quem está na tela não pode se provisionar.
+   */
+  naoProvisionada: { slug: string } | null
   setSlug: (slug: string) => void
 }
 
@@ -23,11 +29,17 @@ export function ClinicaProvider({ children }: { children: React.ReactNode }) {
   const [slug, setSlugState] = useState('')
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
+  const [naoProvisionada, setNaoProvisionada] = useState<{ slug: string } | null>(null)
 
   useEffect(() => {
     fetch('/api/clinicas')
-      .then((r) => r.json())
-      .then((data) => {
+      .then(async (r) => ({ status: r.status, body: await r.json() }))
+      .then(({ body: data }) => {
+        // 404 com código é o caminho normal de "ainda não liberado", não falha.
+        if (data.code === 'CLINICA_NAO_PROVISIONADA') {
+          setNaoProvisionada({ slug: data.slug ?? '' })
+          return
+        }
         if (data.error) throw new Error(data.error)
         const lista = (data.clinicas ?? []) as ClinicaPublica[]
         setClinicas(lista)
@@ -55,7 +67,9 @@ export function ClinicaProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ClinicaContext.Provider value={{ slug, clinicas, loading, erro, setSlug }}>{children}</ClinicaContext.Provider>
+    <ClinicaContext.Provider value={{ slug, clinicas, loading, erro, naoProvisionada, setSlug }}>
+      {children}
+    </ClinicaContext.Provider>
   )
 }
 

@@ -12,6 +12,31 @@ que tiver: hoje **e-Clínica** (Oral Foz) ou **Clinicorp** (ver
 listar aniversariantes por mês, então essa integração depende de um cron de
 sync, diferente da e-Clínica que busca ao vivo).
 
+## Marca: nada de nome de fornecedor no que a clínica vê
+
+A plataforma de mensagens é **white label**. A clínica a conhece pela marca do
+host (o embed vive em `app.fluxodonto.com`), não pelo nome do fornecedor por
+trás. Então **nenhuma string que chega à tela pode citar "Helena" ou "wts.chat"**.
+
+Vale para o que não parece texto de tela e é:
+
+- mensagens de **erro** — as de `lib/helena.ts` e das rotas sobem para o
+  `EmptyState` das views;
+- o corpo do **401 do `proxy.ts`**, que a pessoa lê se abrir a URL sem token.
+
+A regra é usar linguagem **neutra** ("plataforma de mensagens", "modelos
+aprovados"), não trocar por outro nome fixo: se o white label variar por
+cliente, um nome no código erra de novo. Se algum dia precisar aparecer, tem de
+vir de configuração.
+
+Ficam de fora, porque não chegam ao browser: comentários de código, e os
+identificadores `helena_template_id` / `HelenaTemplate` / `lib/helena.ts` —
+o primeiro é coluna de banco no contrato com o Clinic Control
+([ADR 0006](https://github.com/g4bs2006/Clinic-Control/blob/main/docs/adr/0006-dono-unico-das-migrations.md)),
+renomear seria breaking change.
+
+Verificação: `grep -r Helena .next/static` depois do build tem de vir vazio.
+
 ## Acesso
 
 O app **não tem login**. O acesso é por **link assinado**, e o token no link
