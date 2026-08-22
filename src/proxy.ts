@@ -37,7 +37,7 @@ function negar(request: NextRequest) {
   // login não ajuda (não há login), então responde texto curto — quem abriu
   // sem token não tem ação possível a não ser pedir o link certo.
   return new NextResponse(
-    'Acesso não autorizado. Abra o painel pela aba da Helena da sua clínica ou pelo Clinic Control.',
+    'Acesso não autorizado. Abra o painel pela aba da sua clínica na plataforma.',
     { status: 401, headers: { 'content-type': 'text/plain; charset=utf-8' } },
   )
 }

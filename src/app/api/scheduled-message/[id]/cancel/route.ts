@@ -26,7 +26,7 @@ export async function POST(
       .eq('clinica_id', clinica.id)
       .single()
     if (envioErr || !envio) throw new Error('Envio não encontrado')
-    if (!envio.scheduled_message_id) throw new Error('Envio sem mensagem agendada na Helena')
+    if (!envio.scheduled_message_id) throw new Error('Envio sem mensagem agendada na plataforma')
 
     try {
       await cancelScheduledMessage(clinica, envio.scheduled_message_id)

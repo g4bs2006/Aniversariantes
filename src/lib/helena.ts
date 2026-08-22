@@ -13,7 +13,9 @@ function authHeaders(token: string) {
 async function unwrap(res: Response, label: string) {
   const body = await res.text().catch(() => '')
   if (!res.ok) {
-    throw new Error(`Helena (${label}) respondeu ${res.status}: ${body}`)
+    // Sem nomear o fornecedor: esta string sobe para a tela da clínica, e a
+    // plataforma de mensagens é white label (ver README § Marca).
+    throw new Error(`Plataforma de mensagens (${label}) respondeu ${res.status}: ${body}`)
   }
   // Nem toda resposta de sucesso tem corpo: o /cancel responde 200 com corpo
   // vazio, e `res.json()` direto estourava "Unexpected end of JSON input" —

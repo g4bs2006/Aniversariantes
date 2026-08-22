@@ -180,7 +180,7 @@ export function ModelosView() {
       <div>
         <h1 className="text-lg font-semibold text-slate-900">Modelos de mensagem</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Templates aprovados na Helena, do tipo &quot;Mensagens Agendadas&quot;. Mapeie as variáveis com os
+          Modelos aprovados para envio agendado. Mapeie as variáveis com os
           dados do aniversariante.
         </p>
       </div>
@@ -193,13 +193,13 @@ export function ModelosView() {
       )}
       {!loading && !error && !filtradoPorTipo && (
         <Banner variant="warning">
-          Não veio nenhum modelo aprovado do tipo &quot;Mensagens Agendadas&quot; nesta conta Helena — mostrando
-          todos os modelos aprovados (qualquer tipo) como alternativa. Confira no painel da Helena se o modelo
+          Não veio nenhum modelo aprovado para envio agendado nesta conta — mostrando
+          todos os modelos aprovados (qualquer tipo) como alternativa. Confira na plataforma de mensagens se o modelo
           escolhido abaixo está de fato liberado para agendamento antes de usar.
         </Banner>
       )}
       {!loading && items.length === 0 && !error && (
-        <p className="text-sm text-slate-500">Nenhum modelo aprovado encontrado na Helena para esta clínica.</p>
+        <p className="text-sm text-slate-500">Nenhum modelo aprovado encontrado para esta clínica.</p>
       )}
 
       <div className="flex flex-col gap-4">
