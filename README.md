@@ -110,7 +110,10 @@ um `<iframe>` não impede ninguém de abrir a URL direto.
     [Clinicorp](#clinicorp-e-o-cache-de-aniversariantes))
   - **Helena / wts.chat** (`https://api.wts.chat`) — templates de WhatsApp
     aprovados e agendamento de mensagens (comum às duas)
-- Vercel Cron (`vercel.json`) — dispara a sincronização diária da Clinicorp
+- Vercel Cron — **desligado em 2026-10-22** (o `vercel.json` saiu). Quem
+  sincroniza o cache da Clinicorp agora é o app novo de aniversariantes, na VPS.
+  Este cron gastava a cota de 500 chamadas/hora da Clinicorp de cada clínica
+  (um `/patient/get` por paciente) e regravava o cache por cima do app novo.
 
 ## Estrutura
 
@@ -322,7 +325,8 @@ Hobby: cron só dispara 1x/dia, duração de function limitada).
 Por isso a integração é **assíncrona**, não ao vivo como a e-Clínica:
 
 1. `GET /api/cron/sync-clinicorp` (`src/app/api/cron/sync-clinicorp/route.ts`)
-   roda 1x/dia via Vercel Cron (`vercel.json`), autenticado por `CRON_SECRET`.
+   rodava 1x/dia via Vercel Cron, autenticado por `CRON_SECRET`. O cron foi
+   desligado em 2026-10-22; a rota ficou, mas nada mais a chama.
    Pra cada clínica com `sistema_prontuario = 'clinicorp'`: busca os
    aniversariantes de cada dia do mês atual + o seguinte (concorrência
    limitada, não sequencial), enriquece com o status via `/patient/get` só
